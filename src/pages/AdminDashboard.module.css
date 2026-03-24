@@ -1,0 +1,229 @@
+.adminContainer {
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: var(--font-family);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 250px;
+  background-color: var(--surface-container);
+  border-right: var(--border-ghost);
+  padding: var(--spacing-lg);
+  display: flex;
+  flex-direction: column;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-xl);
+  color: var(--primary);
+}
+
+.brand h2 {
+  font-size: 1.25rem;
+  letter-spacing: 1px;
+}
+
+.navMenu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  transition: all 0.2s ease;
+}
+
+.navItem:hover, .navItem.active {
+  background-color: var(--surface-container-high);
+  color: var(--text-main);
+}
+
+.navItem.active {
+  border-left: 3px solid var(--primary);
+  padding-left: calc(var(--spacing-md) - 3px);
+  color: var(--primary);
+}
+
+/* Main Content */
+.mainContent {
+  flex: 1;
+  padding: var(--spacing-xl);
+  overflow-y: auto;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.headerTitle {
+  font-size: 1.75rem;
+  font-weight: 700;
+}
+
+.actionBtn {
+  background: var(--primary);
+  color: var(--surface-container-lowest, #000);
+  padding: var(--spacing-sm) var(--spacing-lg);
+  border-radius: var(--radius-sm);
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s;
+}
+
+.actionBtn:hover {
+  box-shadow: var(--glow-primary);
+  transform: translateY(-1px);
+}
+
+/* Dashboard Grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+}
+
+/* Cards */
+.card {
+  background-color: var(--surface-container);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-lg);
+  border: var(--border-ghost);
+  position: relative;
+  overflow: hidden;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+  color: var(--text-muted);
+}
+
+.cardTitle {
+  font-size: 1rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.statValue {
+  font-size: 2.5rem;
+  font-weight: 900;
+  color: var(--primary);
+  text-shadow: var(--glow-primary);
+}
+
+/* Forms */
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
+}
+
+.label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.input {
+  background-color: var(--surface-container-high);
+  border: var(--border-ghost);
+  color: var(--text-main);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 5px rgba(0, 255, 65, 0.2);
+}
+
+/* Lists */
+.linkList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-sm);
+}
+
+.linkItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm);
+  background-color: var(--surface-container-high);
+  border-radius: var(--radius-sm);
+}
+
+.linkInfo {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+}
+
+.brandCircle {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: var(--glow-primary);
+}
+
+.statTrend {
+  color: var(--primary);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.toggleSwitch {
+  width: 40px;
+  height: 20px;
+  background: var(--primary);
+  border-radius: 10px;
+  position: relative;
+  cursor: pointer;
+}
+
+.toggleKnob {
+  width: 16px;
+  height: 16px;
+  background: #000;
+  border-radius: 50%;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+.secondaryActionBtn {
+  background: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.fullWidthBtn {
+  width: 100%;
+  margin-top: 1rem;
+  justify-content: center;
+}
