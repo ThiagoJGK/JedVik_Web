@@ -11,6 +11,7 @@ import AdminPerfil from './pages/admin/pages/AdminPerfil';
 import AdminLanzamiento from './pages/admin/pages/AdminLanzamiento';
 import AdminMerch from './pages/admin/pages/AdminMerch';
 import AdminFans from './pages/admin/pages/AdminFans';
+import AdminMore from './pages/admin/pages/AdminMore';
 
 function App() {
   return (
@@ -33,6 +34,7 @@ function App() {
               <Route path="lanzamiento" element={<AdminLanzamiento />} />
               <Route path="merch" element={<AdminMerch />} />
               <Route path="fans" element={<AdminFans />} />
+              <Route path="more" element={<AdminMore />} />
             </Route>
           </Routes>
         </BrowserRouter>
