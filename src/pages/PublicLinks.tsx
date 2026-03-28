@@ -5,12 +5,44 @@ import { app } from '../firebase';
 
 const db = getFirestore(app);
 
+const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
+  Spotify: { icon: 'spotify', color: '1DB954' },
+  Instagram: { icon: 'instagram', color: 'E4405F' },
+  YouTube: { icon: 'youtube', color: 'FF0000' },
+  TikTok: { icon: 'tiktok', color: 'FFFFFF' },
+  'Apple Music': { icon: 'apple', color: 'FA243C' },
+  SoundCloud: { icon: 'soundcloud', color: 'FF3300' },
+  'Twitter/X': { icon: 'x', color: 'FFFFFF' },
+  Facebook: { icon: 'facebook', color: '1877F2' },
+  Otro: { icon: 'link', color: 'CCCCCC' },
+};
+
 const PublicLinks = () => {
   const { data } = useCMS();
 
   // Community signup state
   const [email, setEmail] = useState('');
   const [signupState, setSignupState] = useState<'idle' | 'loading' | 'success' | 'exists' | 'error'>('idle');
+
+  useState(() => {
+    const trackVisit = async () => {
+      const hasVisited = sessionStorage.getItem('jv_visited');
+      if (hasVisited) return;
+
+      try {
+        await addDoc(collection(db, 'analytics'), {
+          type: 'visit',
+          timestamp: serverTimestamp(),
+          userAgent: navigator.userAgent,
+          platform: navigator.platform
+        });
+        sessionStorage.setItem('jv_visited', 'true');
+      } catch (e) {
+        console.warn('Analytics error:', e);
+      }
+    };
+    trackVisit();
+  });
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -129,15 +161,10 @@ const PublicLinks = () => {
         </section>
 
         {/* ── Centralized Links ── */}
-        <section className="px-6 mt-16 space-y-3">
-          <h4 className="font-label text-[10px] text-center tracking-[0.4em] text-white/30 uppercase mb-6">Connect with the sound</h4>
+        <section className="px-6 mt-16 space-y-4">
+          <h4 className="font-label text-[10px] text-center tracking-[0.4em] text-white/30 uppercase mb-8">Connect with the sound</h4>
           {data.links.filter(l => l.active).sort((a, b) => a.order - b.order).map(link => {
-            let icon = 'link';
-            if (link.platform.toLowerCase().includes('spotify')) icon = 'podcasts';
-            if (link.platform.toLowerCase().includes('apple')) icon = 'brand_awareness';
-            if (link.platform.toLowerCase().includes('youtube')) icon = 'videocam';
-            if (link.platform.toLowerCase().includes('instagram')) icon = 'photo_camera';
-            if (link.platform.toLowerCase().includes('tiktok')) icon = 'music_video';
+            const platformInfo = PLATFORM_DATA[link.platform] || PLATFORM_DATA.Otro;
 
             return (
               <a
@@ -145,13 +172,19 @@ const PublicLinks = () => {
                 href={link.url}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center justify-between px-8 py-5 bg-surface-container-high rounded-full hover:bg-surface-bright active:scale-[0.98] transition-all group"
+                className="flex items-center justify-between px-6 py-5 bg-surface-container-high rounded-3xl hover:bg-surface-bright active:scale-[0.98] transition-all group border border-white/5"
               >
-                <div className="flex items-center gap-4">
-                  <span className="material-symbols-outlined text-primary">{icon}</span>
-                  <span className="font-headline font-bold text-sm tracking-widest uppercase">{link.platform}</span>
+                <div className="flex items-center gap-5">
+                  <div className="w-10 h-10 rounded-full bg-black/40 p-2.5 flex items-center justify-center group-hover:bg-black/60 transition-colors">
+                    <img
+                      src={`https://cdn.simpleicons.org/${platformInfo.icon}/${platformInfo.color}`}
+                      alt={link.platform}
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                  <span className="font-headline font-bold text-sm tracking-[0.15em] uppercase">{link.platform}</span>
                 </div>
-                <span className="material-symbols-outlined text-white/20 group-hover:text-white transition-colors">arrow_forward</span>
+                <span className="material-symbols-outlined text-white/10 group-hover:text-white transition-all group-hover:translate-x-1">arrow_forward</span>
               </a>
             );
           })}
