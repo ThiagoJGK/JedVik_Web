@@ -1,10 +1,8 @@
 import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, orderBy, limit, onSnapshot, where, Timestamp } from 'firebase/firestore';
-import { app } from '../../../firebase';
+import { collection, query, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { db } from '../../../firebase';
 import { useCMS } from '../../../context/CMSContext';
 import { AreaChart, Area, XAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-
-const db = getFirestore(app);
 
 interface FanEntry { email: string; createdAt: Timestamp; }
 interface ChartPoint { date: string; fans: number; visits: number; }
@@ -17,69 +15,76 @@ const AdminStats = () => {
   const [recent, setRecent] = useState<FanEntry[]>([]);
   const [chartData, setChartData] = useState<ChartPoint[]>([]);
 
+  // Raw data from listeners
+  const [fansData, setFansData] = useState<any[]>([]);
+  const [visitsData, setVisitsData] = useState<any[]>([]);
+
   useEffect(() => {
     const today = new Date();
-    const thirtyAgo = new Date(); thirtyAgo.setDate(today.getDate() - 30);
     const weekAgo = new Date(); weekAgo.setDate(today.getDate() - 7);
 
-    // 1. Listen for ALL Fans
+    // 1. Listen for Fans
     const unsubFans = onSnapshot(collection(db, 'fans'), (snap) => {
+      const docs = snap.docs.map(d => ({ ...d.data(), id: d.id })) as unknown as FanEntry[];
+      setFansData(docs);
       setTotalFans(snap.size);
       
-      const lastWeek = snap.docs.filter(d => (d.data().createdAt as Timestamp)?.toDate() >= weekAgo);
+      const lastWeek = docs.filter(d => d.createdAt?.toDate() >= weekAgo);
       setWeekFans(lastWeek.length);
 
-      const recentOnes = [...snap.docs]
-        .sort((a, b) => (b.data().createdAt as Timestamp)?.toMillis() - (a.data().createdAt as Timestamp)?.toMillis())
-        .slice(0, 8)
-        .map(d => d.data() as FanEntry);
+      const recentOnes = [...docs]
+        .sort((a, b) => b.createdAt?.toMillis() - a.createdAt?.toMillis())
+        .slice(0, 8);
       setRecent(recentOnes);
     });
 
-    // 2. Listen for ALL Visits
+    // 2. Listen for Visits
     const qVisits = query(collection(db, 'analytics'), where('type', '==', 'visit'));
     const unsubVisits = onSnapshot(qVisits, (snap) => {
+      const docs = snap.docs.map(d => ({ ...d.data(), id: d.id })) as any[];
+      setVisitsData(docs);
       setTotalVisits(snap.size);
     });
 
-    // 3. Build Chart Data (Combined)
-    const unsubChart = onSnapshot(collection(db, 'fans'), (fansSnap) => {
-      onSnapshot(qVisits, (visitsSnap) => {
-        const byDay: Record<string, { fans: number; visits: number }> = {};
-        
-        // Initialize last 7 days at least
-        for (let i = 29; i >= 0; i--) {
-          const d = new Date(); d.setDate(d.getDate() - i);
-          const key = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
-          byDay[key] = { fans: 0, visits: 0 };
-        }
-
-        fansSnap.docs.forEach(d => {
-          const dt = (d.data().createdAt as Timestamp)?.toDate();
-          if (dt && dt >= thirtyAgo) {
-            const key = dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
-            if (byDay[key]) byDay[key].fans++;
-          }
-        });
-
-        visitsSnap.docs.forEach(d => {
-          const dt = (d.data().timestamp as Timestamp)?.toDate();
-          if (dt && dt >= thirtyAgo) {
-            const key = dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
-            if (byDay[key]) byDay[key].visits++;
-          }
-        });
-
-        setChartData(Object.entries(byDay).map(([date, val]) => ({ date, ...val })));
-      });
-    });
-
-    return () => { unsubFans(); unsubVisits(); unsubChart(); };
+    return () => { unsubFans(); unsubVisits(); };
   }, []);
 
-  const timeAgo = (ts: Timestamp) => {
+  // 3. Process Chart Data whenever fans or visits update
+  useEffect(() => {
+    const today = new Date();
+    const thirtyAgo = new Date(); thirtyAgo.setDate(today.getDate() - 30);
+    const byDay: Record<string, { fans: number; visits: number }> = {};
+    
+    // Initialize last 30 days
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(today.getDate() - i);
+      const key = d.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+      byDay[key] = { fans: 0, visits: 0 };
+    }
+
+    fansData.forEach(d => {
+      const dt = (d.createdAt as any)?.toDate();
+      if (dt && dt >= thirtyAgo) {
+        const key = dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+        if (byDay[key]) byDay[key].fans++;
+      }
+    });
+
+    visitsData.forEach(d => {
+      const dt = (d.timestamp as any)?.toDate();
+      if (dt && dt >= thirtyAgo) {
+        const key = dt.toLocaleDateString('es-AR', { day: '2-digit', month: 'short' });
+        if (byDay[key]) byDay[key].visits++;
+      }
+    });
+
+    setChartData(Object.entries(byDay).map(([date, val]) => ({ date, ...val })));
+  }, [fansData, visitsData]);
+
+  const timeAgo = (ts: any) => {
     if (!ts) return '—';
-    const diff = Math.floor((Date.now() - ts.toMillis()) / 60000);
+    const ms = typeof ts.toMillis === 'function' ? ts.toMillis() : Date.now();
+    const diff = Math.floor((Date.now() - ms) / 60000);
     if (diff < 1) return 'ahora';
     if (diff < 60) return `hace ${diff}m`;
     if (diff < 1440) return `hace ${Math.floor(diff / 60)}h`;

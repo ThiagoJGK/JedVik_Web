@@ -1,8 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getFirestore, doc, onSnapshot, setDoc } from 'firebase/firestore';
-import { app } from '../firebase';
-
-const db = getFirestore(app);
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 
 export interface LinkItem {
   id: string;

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 interface ImageUploadProps {
   onUploadSuccess: (url: string) => void;
@@ -17,7 +17,6 @@ declare global {
 }
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onUploadSuccess, currentImage, label }) => {
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleUpload = () => {
     if (!window.cloudinary) {
@@ -59,7 +58,6 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUploadSuccess, currentImage
         if (!error && result && result.event === 'success') {
           const url = result.info.secure_url;
           onUploadSuccess(url);
-          setIsUploading(false);
         }
       }
     );
