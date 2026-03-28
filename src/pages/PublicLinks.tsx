@@ -82,18 +82,8 @@ const PublicLinks = () => {
   return (
     <div className="bg-surface-container-lowest text-on-surface font-body selection:bg-primary selection:text-on-primary-fixed overflow-x-hidden">
       {/* TopAppBar */}
-      <nav className="fixed top-0 w-full z-50 bg-surface/60 dark:bg-black/60 backdrop-blur-xl flex justify-between items-center px-8 py-4">
-        <a href="#" className="material-symbols-outlined text-white/70">menu</a>
+      <nav className="fixed top-0 w-full z-50 bg-surface/60 dark:bg-black/60 backdrop-blur-xl flex justify-center items-center px-8 py-4">
         <h1 className="font-headline font-black tracking-tighter text-white uppercase text-2xl">{data.profile.name}</h1>
-        <a
-          href={data.merch?.shopUrl || '#'}
-          onClick={handleMerchClick}
-          target={data.merch?.shopUrl ? '_blank' : undefined}
-          rel="noreferrer"
-          className="material-symbols-outlined text-white/70 hover:text-primary transition-colors"
-        >
-          shopping_bag
-        </a>
       </nav>
 
       <main className="relative pb-32">
@@ -123,24 +113,46 @@ const PublicLinks = () => {
         {/* ── Priority Release ── */}
         <section className="px-6 -mt-20 relative z-20">
           <div className="bg-surface-container rounded-xl p-6 shadow-2xl relative overflow-hidden group">
-            <div className="absolute -top-24 -left-24 w-64 h-64 bg-primary/20 blur-[80px] rounded-full" />
+            {/* Adaptive Glow */}
+            <div 
+              className="absolute -top-24 -left-24 w-64 h-64 blur-[80px] rounded-full opacity-40 transition-colors duration-500"
+              style={{ backgroundColor: data.featuredVideo.highlightColor || '#CC4E3D' }}
+            />
+            
             <div className="flex items-center gap-6 mb-8 relative z-10">
-              <div className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden shadow-[0_0_30px_rgba(204,78,61,0.3)]">
+              <div 
+                className="w-32 h-32 flex-shrink-0 rounded-lg overflow-hidden transition-all duration-500"
+                style={{ 
+                  boxShadow: `0 0 40px ${data.featuredVideo.highlightColor}44`,
+                  border: `1px solid ${data.featuredVideo.highlightColor}22`
+                }}
+              >
                 <img className="w-full h-full object-cover" alt="Latest Release"
-                  src="https://lh3.googleusercontent.com/aida-public/AB6AXuA9zCHoNr8ciyN7wHTbkT6OdbYft_AzzI8Zg7QsgC8Ruc-jZvTNN6Pd-vc6KoClB9sT95-sOzr4rN4ONzfWz5ONCv_mS20yf155nn9w6WKIWTQEMCSBColq0ILWOCsphtRzmqlkvbinGbOueecCLGl4lIlzpIeLIK8pKNM8kSLPZr4AOkD0xUzJAgC7nGpmmeYClrKxAq-OnOY6zhAn00e208q0zsaiEBYE2Z6e0Ca29k3rMCL_2iXZKwZgvuB1Gj868c7e5ZvosiQ"
+                  src={data.featuredVideo.coverUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuA9zCHoNr8ciyN7wHTbkT6OdbYft_AzzI8Zg7QsgC8Ruc-jZvTNN6Pd-vc6KoClB9sT95-sOzr4rN4ONzfWz5ONCv_mS20yf155nn9w6WKIWTQEMCSBColq0ILWOCsphtRzmqlkvbinGbOueecCLGl4lIlzpIeLIK8pKNM8kSLPZr4AOkD0xUzJAgC7nGpmmeYClrKxAq-OnOY6zhAn00e208q0zsaiEBYE2Z6e0Ca29k3rMCL_2iXZKwZgvuB1Gj868c7e5ZvosiQ"}
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <span className="font-label text-[10px] tracking-widest text-primary font-bold uppercase">Latest Release</span>
-                <h3 className="font-headline text-2xl font-black leading-tight">ECHOS IN THE VOID</h3>
-                <p className="text-on-surface-variant text-sm">{data.profile.name} feat. LUNA</p>
+                <span className="font-label text-[10px] tracking-widest font-bold uppercase" style={{ color: data.featuredVideo.highlightColor || '#CC4E3D' }}>Latest Release</span>
+                <h3 className="font-headline text-2xl font-black leading-tight uppercase">
+                  {data.featuredVideo.title || 'ECHOS IN THE VOID'}
+                </h3>
+                <p className="text-on-surface-variant text-sm">
+                  {data.featuredVideo.artists || `${data.profile.name} feat. LUNA`}
+                </p>
               </div>
             </div>
 
             {/* Animated progress bar */}
             <div className="space-y-4 relative z-10 mb-8">
               <div className="h-1 bg-surface-variant rounded-full w-full overflow-hidden">
-                <div className="h-full bg-primary-gradient rounded-full animate-[progress_8s_ease-in-out_infinite]" style={{ width: '33%', animation: 'pulse-bar 4s ease-in-out infinite alternate' }} />
+                <div 
+                  className="h-full rounded-full animate-[progress_8s_ease-in-out_infinite]" 
+                  style={{ 
+                    width: '33%', 
+                    animation: 'pulse-bar 4s ease-in-out infinite alternate',
+                    background: `linear-gradient(90deg, ${data.featuredVideo.highlightColor || '#CC4E3D'}, #000)`
+                  }} 
+                />
               </div>
               <div className="flex justify-between text-[10px] font-label text-white/40 tracking-widest">
                 <span>01:24</span>
@@ -150,7 +162,8 @@ const PublicLinks = () => {
 
             <button
               onClick={handlePlayClick}
-              className="w-full bg-primary-gradient py-5 rounded-full flex items-center justify-center gap-3 font-headline font-bold text-sm tracking-wider uppercase active:scale-95 transition-transform hover:opacity-90"
+              className="w-full py-5 rounded-full flex items-center justify-center gap-3 font-headline font-bold text-sm tracking-wider uppercase active:scale-95 transition-transform hover:opacity-90 shadow-lg text-white"
+              style={{ background: `linear-gradient(135deg, ${data.featuredVideo.highlightColor || '#CC4E3D'}, #000)` }}
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
               Escuchar el Nuevo Sencillo

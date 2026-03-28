@@ -32,6 +32,10 @@ export interface CMSData {
   featuredVideo: {
     url: string;
     autoplay: boolean;
+    title?: string;
+    artists?: string;
+    coverUrl?: string;
+    highlightColor?: string;
   };
   merch: {
     shopUrl: string;
@@ -57,7 +61,11 @@ const defaultData: CMSData = {
   ],
   featuredVideo: {
     url: "https://youtu.be/dQw4w9WgXcQ",
-    autoplay: false
+    autoplay: false,
+    title: "ECHOS IN THE VOID",
+    artists: "Jed Vik feat. LUNA",
+    coverUrl: "",
+    highlightColor: "#CC4E3D"
   },
   merch: {
     shopUrl: ""
@@ -102,7 +110,8 @@ export const CMSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     try {
       const docRef = doc(db, 'cms', 'jedvik');
-      await setDoc(docRef, { ...data, ...newData }, { merge: true });
+      // Firestore handles merging nested objects automatically with { merge: true }
+      await setDoc(docRef, newData, { merge: true });
     } catch (error) {
       console.error("Error guardando en Firebase:", error);
       // Opcional: Revertir si el usuario prefiriese, aquí solo notificamos el error visualmente o silencioso

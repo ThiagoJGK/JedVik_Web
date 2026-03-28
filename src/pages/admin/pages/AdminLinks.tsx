@@ -27,9 +27,21 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: link.id });
   const [showUrl, setShowUrl] = useState(false);
+  const [localUrl, setLocalUrl] = useState(link.url);
   const style = { transform: CSS.Transform.toString(transform), transition };
 
+  // Update local state when prop changes (e.g. from DB)
+  useState(() => {
+    if (localUrl !== link.url) setLocalUrl(link.url);
+  });
+
   const platformInfo = PLATFORM_DATA[link.platform] || PLATFORM_DATA.Otro;
+
+  const handleBlur = () => {
+    if (localUrl !== link.url) {
+      onUrlChange(localUrl);
+    }
+  };
 
   return (
     <div ref={setNodeRef} style={style} className="group">
@@ -54,6 +66,7 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
             value={link.platform}
             onChange={e => onPlatformChange(e.target.value)}
             className="bg-transparent border-none text-white font-headline font-bold text-[10px] md:text-xs uppercase tracking-tight outline-none cursor-pointer w-full p-0"
+            title="Seleccionar plataforma"
           >
             {PLATFORMS.map(p => <option key={p} value={p} className="bg-surface-container text-white normal-case">{p}</option>)}
           </select>
@@ -65,10 +78,12 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
           <div className="hidden md:flex bg-surface-container-highest rounded-full px-5 py-2 items-center w-full">
             <input
               type="url"
-              value={link.url}
-              onChange={e => onUrlChange(e.target.value)}
+              value={localUrl}
+              onChange={e => setLocalUrl(e.target.value)}
+              onBlur={handleBlur}
               placeholder="https://..."
               className="bg-transparent border-none focus:ring-0 text-[13px] text-white/60 font-body w-full outline-none"
+              title="URL del link"
             />
           </div>
 
@@ -88,7 +103,6 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
           <label className="relative inline-flex items-center cursor-pointer">
             <input type="checkbox" checked={link.active} onChange={onToggle} className="sr-only peer" />
             <div className="w-10 md:w-12 h-5 md:h-6 bg-surface-container-highest rounded-full peer peer-checked:after:translate-x-5 md:peer-checked:after:translate-x-6 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white/40 after:rounded-full after:h-4 md:after:h-5 after:w-4 md:after:w-5 after:transition-all peer-checked:after:bg-white"
-              style={{ '--tw-bg-opacity': '1' } as React.CSSProperties}
             >
               <div className={`w-full h-full rounded-full transition-all duration-200 ${link.active ? '' : 'bg-surface-container-high'}`}
                 style={link.active ? { background: 'linear-gradient(135deg, #CC4E3D, #f68a2f)' } : {}}
@@ -97,7 +111,7 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
           </label>
 
           {/* Delete */}
-          <button onClick={onDelete} className="text-white/10 hover:text-red-400/80 transition-colors p-1">
+          <button onClick={onDelete} className="text-white/10 hover:text-red-400/80 transition-colors p-1" title="Eliminar link">
             <span className="material-symbols-outlined text-xl">delete</span>
           </button>
         </div>
@@ -110,11 +124,13 @@ const SortableRow = ({ link, onToggle, onDelete, onUrlChange, onPlatformChange }
           <div className="bg-black/20 rounded-xl px-4 py-2">
             <input
               type="url"
-              value={link.url}
-              onChange={e => onUrlChange(e.target.value)}
+              value={localUrl}
+              onChange={e => setLocalUrl(e.target.value)}
+              onBlur={handleBlur}
               placeholder="https://..."
               className="bg-transparent border-none focus:ring-0 text-[12px] text-white/80 font-body w-full outline-none p-0"
               autoFocus
+              title="URL del link móvil"
             />
           </div>
         </div>
