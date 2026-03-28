@@ -35,6 +35,9 @@ export interface CMSData {
     url: string;
     autoplay: boolean;
   };
+  merch: {
+    shopUrl: string;
+  };
 }
 
 const defaultData: CMSData = {
@@ -57,6 +60,9 @@ const defaultData: CMSData = {
   featuredVideo: {
     url: "https://youtu.be/dQw4w9WgXcQ",
     autoplay: false
+  },
+  merch: {
+    shopUrl: ""
   }
 };
 

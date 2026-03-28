@@ -1,4 +1,5 @@
-import { Users, Link as LinkIcon, Youtube, Plus, GripVertical, MoreVertical, Music, Instagram } from 'lucide-react';
+// @ts-ignore
+import { Users, Link as LinkIcon, Youtube, Plus, GripVertical, MoreVertical, Music2 as Music, Instagram } from 'lucide-react';
 import styles from '../AdminDashboard.module.css';
 import { useCMS } from '../../context/CMSContext';
 

@@ -1,3 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@700;800;900&family=Inter:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  .material-symbols-outlined {
+    font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  }
+  
+  body {
+    min-height: max(884px, 100dvh);
+  }
+
+  ::-webkit-scrollbar { display: none; }
+  body { -ms-overflow-style: none; scrollbar-width: none; }
+}
+
+@layer utilities {
+  .bg-primary-gradient {
+    background: linear-gradient(135deg, #CC4E3D 0%, #f68a2f 100%);
+  }
+}
+
+/* Smooth scroll global */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Player progress bar pulse animation */
+@keyframes pulse-bar {
+  0%   { width: 20%; }
+  50%  { width: 55%; }
+  100% { width: 30%; }
+}
+
 :root {
   /* Neon Pulse Design System Tokens */
   

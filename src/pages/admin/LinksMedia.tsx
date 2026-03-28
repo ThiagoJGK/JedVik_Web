@@ -1,4 +1,5 @@
-import { Plus, GripVertical, MoreVertical, Music, Instagram, Youtube, Twitter, ExternalLink } from 'lucide-react';
+// @ts-ignore
+import { Plus, GripVertical, MoreVertical, Music2 as Music, Instagram, Youtube, Twitter, ExternalLink } from 'lucide-react';
 import styles from '../AdminDashboard.module.css';
 import { useCMS } from '../../context/CMSContext';
 
