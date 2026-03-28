@@ -1,9 +1,7 @@
 import { useState } from 'react';
 import { useCMS } from '../context/CMSContext';
-import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
-import { app } from '../firebase';
-
-const db = getFirestore(app);
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
   Spotify: { icon: 'spotify', color: '1DB954' },

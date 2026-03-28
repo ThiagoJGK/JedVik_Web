@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
-import { getFirestore, collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
-import { app } from '../../../firebase';
-
-const db = getFirestore(app);
+import { collection, query, orderBy, getDocs, Timestamp } from 'firebase/firestore';
+import { db } from '../../../firebase';
 
 interface Fan { email: string; createdAt: Timestamp; source: string; }
 

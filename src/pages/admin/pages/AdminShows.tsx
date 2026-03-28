@@ -1,9 +1,5 @@
 import { useState } from 'react';
 import { useCMS, type ShowItem } from '../../../context/CMSContext';
-import { getFirestore, doc, setDoc } from 'firebase/firestore';
-import { app } from '../../../firebase';
-
-const db = getFirestore(app);
 
 const blank = (): ShowItem => ({ id: crypto.randomUUID(), city: '', venue: '', date: '', url: '' });
 
