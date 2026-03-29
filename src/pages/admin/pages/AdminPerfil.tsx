@@ -6,6 +6,7 @@ const AdminPerfil = () => {
   const { data, updateData } = useCMS();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [previewMode, setPreviewMode] = useState<'web' | 'mobile'>('mobile');
   const [form, setForm] = useState({ 
     name: data.profile.name, 
     bio: data.profile.bio, 
@@ -121,10 +122,29 @@ const AdminPerfil = () => {
 
         {/* Live preview */}
         <div className="space-y-4">
-          <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block ml-4">Vista Previa de Capas</label>
-          <div className="bg-black rounded-3xl overflow-hidden relative shadow-2xl h-[450px] border border-white/10 group">
-            {/* Capa 1: Fondo */}
-            <div className="absolute inset-0">
+          <div className="flex items-center justify-between ml-4">
+            <label className="font-label text-[10px] uppercase tracking-widest text-white/40">Vista Previa</label>
+            <div className="flex bg-surface-container-highest rounded-full p-1">
+              <button 
+                onClick={() => setPreviewMode('mobile')}
+                className={`px-4 py-1.5 rounded-full font-label text-[9px] uppercase tracking-widest transition-all ${previewMode === 'mobile' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Móvil
+              </button>
+              <button 
+                onClick={() => setPreviewMode('web')}
+                className={`px-4 py-1.5 rounded-full font-label text-[9px] uppercase tracking-widest transition-all ${previewMode === 'web' ? 'bg-primary text-white shadow-lg' : 'text-white/40 hover:text-white'}`}
+              >
+                Web
+              </button>
+            </div>
+          </div>
+
+          <div 
+            className={`bg-black rounded-3xl overflow-hidden relative shadow-2xl transition-all duration-500 border border-white/10 mx-auto ${previewMode === 'mobile' ? 'w-[280px] h-[500px]' : 'w-full h-[350px]'}`}
+          >
+            {/* Layer 1: Background */}
+            <div className="absolute inset-0 overflow-hidden">
               {form.imageUrl ? (
                 <img src={form.imageUrl} alt="Preview BG" className="w-full h-full object-cover grayscale brightness-[0.3] contrast-125 blur-[1px]" />
               ) : (
@@ -133,33 +153,27 @@ const AdminPerfil = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
             </div>
 
-            {/* Capa 2: Texto */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none">
-              <h2 className="font-headline font-black text-[12vw] tracking-tighter uppercase leading-[0.7] text-white/10 text-center">
-                {form.name.split(' ')[0]}<br />
-                {form.name.split(' ').slice(1).join(' ')}
+            {/* Layer 2: Giant Text (Single Line, Solid White, Higher) */}
+            <div className="absolute inset-0 z-10 flex items-start justify-center pointer-events-none select-none overflow-hidden h-full pt-10">
+              <h2 className="font-headline font-black text-[15vw] tracking-tighter uppercase leading-none text-white whitespace-nowrap text-center">
+                {form.name}
               </h2>
             </div>
 
-            {/* Capa 3: Silueta */}
+            {/* Layer 3: Silhouette (Exact Match) */}
             {form.silhouetteUrl && (
-              <div className="absolute inset-0 flex justify-center items-end pointer-events-none">
+              <div className="absolute inset-0 z-20 pointer-events-none overflow-hidden">
                 <img 
                   src={form.silhouetteUrl} 
                   alt="Preview Silhouette" 
-                  className="h-[90%] w-auto object-contain object-bottom drop-shadow-[0_0_20px_rgba(0,0,0,0.5)] transition-transform duration-500 group-hover:scale-105" 
+                  className="w-full h-full object-cover grayscale brightness-[0.3] contrast-125 transition-transform duration-500" 
                 />
               </div>
             )}
             
-            {/* Bio Overlay */}
-            <div className="absolute bottom-10 left-0 right-0 text-center px-4">
-              <p className="font-label text-[8px] tracking-[0.4em] text-white/40 uppercase mb-1 font-bold">
-                {form.bio || 'Bio aquí'}
-              </p>
-            </div>
+            {/* Bio Overlay Removed as per request */}
           </div>
-          <p className="text-[10px] text-white/20 text-center uppercase tracking-widest italic">Simulación de profundidad 3D</p>
+          <p className="text-[10px] text-white/20 text-center uppercase tracking-widest italic">Simulación de profundidad 3D ({previewMode === 'mobile' ? '9:16' : '16:9'})</p>
         </div>
       </div>
     </div>

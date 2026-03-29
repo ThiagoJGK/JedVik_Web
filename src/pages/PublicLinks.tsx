@@ -10,7 +10,7 @@ const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
   YouTube: { icon: 'youtube', color: 'FF0000' },
   'YouTube Music': { icon: 'youtubemusic', color: 'FF0000' },
   TikTok: { icon: 'tiktok', color: 'FFFFFF' },
-  'Apple Music': { icon: 'apple', color: 'FA243C' },
+  'Apple Music': { icon: 'applemusic', color: 'FA243C' },
   SoundCloud: { icon: 'soundcloud', color: 'FF3300' },
   'Twitter/X': { icon: 'x', color: 'FFFFFF' },
   Facebook: { icon: 'facebook', color: '1877F2' },
@@ -101,31 +101,25 @@ const PublicLinks = () => {
             <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
           </div>
 
-          {/* Layer 2: Giant Background Text */}
-          <div className="relative z-10 w-full flex justify-center select-none pointer-events-none overflow-hidden">
-            <h2 className="font-headline font-black text-[28vw] md:text-[22vw] tracking-tighter uppercase leading-[0.75] text-white/10 whitespace-nowrap text-center">
-              {data.profile.name.split(' ')[0]}<br />
-              {data.profile.name.split(' ').slice(1).join(' ')}
+          {/* Layer 2: Giant Background Text (Solid White, Higher, Bolder) */}
+          <div className="absolute inset-0 z-10 flex items-start justify-center select-none pointer-events-none overflow-hidden h-full pt-32">
+            <h2 className="font-headline font-black text-[42vw] md:text-[25vw] tracking-tighter uppercase leading-none text-white whitespace-nowrap text-center drop-shadow-[0_10px_50px_rgba(0,0,0,0.5)]">
+              {data.profile.name}
             </h2>
           </div>
 
           {/* Layer 3: Foreground Silhouette (Artist Cutout) */}
           {data.profile.silhouetteUrl && (
-            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 w-full h-full flex justify-center items-end">
+            <div className="absolute inset-0 z-20 pointer-events-none">
               <img 
                 src={data.profile.silhouetteUrl} 
                 alt={data.profile.name}
-                className="h-[95%] w-auto object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]"
+                className="w-full h-full object-cover grayscale brightness-[0.3] contrast-125"
               />
             </div>
           )}
 
-          {/* Overlay Content (Bio, etc.) */}
-          <div className="absolute bottom-20 left-0 right-0 z-30 px-6 text-center">
-            <p className="font-label text-[10px] tracking-[0.5em] text-white/40 uppercase mb-2 font-bold drop-shadow-lg">
-              {data.profile.bio || 'The Sonic Monolith Tour 2024'}
-            </p>
-          </div>
+          {/* Overlay Content Removed as per request */}
         </section>
 
         {/* ── Priority Release ── */}
@@ -188,6 +182,8 @@ const PublicLinks = () => {
             </button>
           </div>
         </section>
+
+        {/* Bio Overlay Removed as per request */}
 
         {/* ── Links Centralizados ── */}
         <section className="px-6 mt-16 space-y-4">
