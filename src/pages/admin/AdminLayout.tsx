@@ -1,4 +1,4 @@
-import { Outlet, Navigate } from 'react-router-dom';
+import { Outlet, Navigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/admin/Sidebar';
 import BottomTabBar from '../../components/admin/BottomTabBar';
@@ -24,7 +24,7 @@ const AdminLayout = () => {
       <header className="fixed top-0 right-0 left-0 md:left-60 h-16 z-30 flex items-center justify-between px-8 border-b border-white/5"
         style={{ background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(20px)' }}
       >
-        <span className="font-headline font-black text-sm tracking-widest text-white uppercase">JED VIK · ADMIN</span>
+        <Link to="/" className="font-headline font-black text-sm tracking-widest text-white uppercase hover:text-primary transition-colors">JED VIK · ADMIN</Link>
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center border border-white/10">
             <span className="font-headline font-black text-xs text-white uppercase">

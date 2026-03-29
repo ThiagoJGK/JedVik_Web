@@ -67,10 +67,20 @@ const AdminLanzamiento = () => {
     debounceTimer.current = setTimeout(() => {
       if (window.YT && window.YT.Player) {
         setExtracting(true);
-        // Create a temporary hidden player to get duration
+        // Create a temporary player to get duration
         const tempDiv = document.createElement('div');
         tempDiv.id = 'temp-yt-player';
-        tempDiv.style.display = 'none';
+        // Use visible but hidden styles for mobile compatibility
+        Object.assign(tempDiv.style, {
+          position: 'fixed',
+          top: '-9999px',
+          left: '-9999px',
+          width: '1px',
+          height: '1px',
+          opacity: '0',
+          pointerEvents: 'none',
+          zIndex: '-1'
+        });
         document.body.appendChild(tempDiv);
 
         new window.YT.Player('temp-yt-player', {

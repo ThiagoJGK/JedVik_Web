@@ -1,8 +1,8 @@
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const NAV_ITEMS = [
-  { to: '/admin',           label: 'Estadísticas', icon: 'leaderboard', end: true },
+  { to: '/admin',           label: 'Stats',         icon: 'leaderboard', end: true },
   { to: '/admin/links',     label: 'Links',         icon: 'link' },
   { to: '/admin/shows',     label: 'Shows',         icon: 'confirmation_number' },
   { to: '/admin/perfil',    label: 'Perfil',        icon: 'person' },
@@ -23,10 +23,10 @@ const Sidebar = () => {
   return (
     <aside className="hidden md:flex w-60 flex-shrink-0 h-screen fixed left-0 top-0 z-40 flex-col bg-black">
       {/* Brand */}
-      <div className="px-8 pt-8 pb-6">
-        <span className="font-headline font-black text-white text-lg tracking-tighter uppercase">Jed Vik</span>
-        <p className="font-label text-[10px] uppercase tracking-[0.3em] text-white/30 mt-0.5">Admin</p>
-      </div>
+      <Link to="/" className="px-8 pt-8 pb-6 block group">
+        <span className="font-headline font-black text-white text-lg tracking-tighter uppercase group-hover:text-primary transition-colors">Jed Vik</span>
+        <p className="font-label text-[10px] uppercase tracking-[0.3em] text-white/30 mt-0.5 group-hover:text-white/50 transition-colors">Panel de Control</p>
+      </Link>
 
       {/* Divisor */}
       <div className="mx-6 h-px bg-white/5 mb-4" />
