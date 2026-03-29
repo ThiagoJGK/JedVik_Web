@@ -21,6 +21,7 @@ const AdminLanzamiento = () => {
     artists: data.featuredVideo.artists || '',
     coverUrl: data.featuredVideo.coverUrl || '',
     highlightColor: data.featuredVideo.highlightColor || '#CC4E3D',
+    highlightColor2: data.featuredVideo.highlightColor2 || '#000000',
     duration: data.featuredVideo.duration || '04:12',
   });
 
@@ -92,6 +93,7 @@ const AdminLanzamiento = () => {
         artists: form.artists,
         coverUrl: form.coverUrl,
         highlightColor: form.highlightColor,
+        highlightColor2: form.highlightColor2,
         duration: form.duration
       } 
     });
@@ -116,7 +118,7 @@ const AdminLanzamiento = () => {
           />
           
           <div>
-            <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Color del Glow</label>
+            <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Color 1 del Glow</label>
             <div className="flex items-center gap-4 bg-surface-container-highest rounded-2xl px-4 py-3">
               <input
                 type="color"
@@ -131,7 +133,24 @@ const AdminLanzamiento = () => {
                 className="bg-transparent border-none text-white font-label text-xs uppercase tracking-widest w-full outline-none"
               />
             </div>
-            <p className="text-[9px] text-white/20 mt-2 ml-4 uppercase tracking-tighter">Este color generará el aura vibrante en la portada</p>
+          </div>
+          <div>
+            <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Color 2 del Degradado</label>
+            <div className="flex items-center gap-4 bg-surface-container-highest rounded-2xl px-4 py-3">
+              <input
+                type="color"
+                value={form.highlightColor2}
+                onChange={e => setForm(prev => ({ ...prev, highlightColor2: e.target.value }))}
+                className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border-none"
+              />
+              <input
+                type="text"
+                value={form.highlightColor2}
+                onChange={e => setForm(prev => ({ ...prev, highlightColor2: e.target.value }))}
+                className="bg-transparent border-none text-white font-label text-xs uppercase tracking-widest w-full outline-none"
+              />
+            </div>
+            <p className="text-[9px] text-white/20 mt-2 ml-4 uppercase tracking-tighter">El degradado pasará de Color 1 a Color 2</p>
           </div>
         </div>
 
@@ -184,7 +203,7 @@ const AdminLanzamiento = () => {
           onClick={handleSave}
           disabled={saving}
           className="w-full py-4 rounded-full font-headline font-bold text-[11px] uppercase tracking-widest text-white active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-4 shadow-xl shadow-primary/10"
-          style={{ background: `linear-gradient(135deg, ${form.highlightColor}, #000)` }}
+          style={{ background: `linear-gradient(135deg, ${form.highlightColor}, ${form.highlightColor2})` }}
         >
           {saving ? <><span className="material-symbols-outlined text-base animate-spin">progress_activity</span> Guardando...</> :
            saved  ? <><span className="material-symbols-outlined text-base">check_circle</span> Guardado</> : 'Actualizar Lanzamiento'}

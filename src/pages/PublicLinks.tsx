@@ -7,6 +7,7 @@ const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
   Spotify: { icon: 'spotify', color: '1DB954' },
   Instagram: { icon: 'instagram', color: 'E4405F' },
   YouTube: { icon: 'youtube', color: 'FF0000' },
+  'YouTube Music': { icon: 'youtubemusic', color: 'FF0000' },
   TikTok: { icon: 'tiktok', color: 'FFFFFF' },
   'Apple Music': { icon: 'apple', color: 'FA243C' },
   SoundCloud: { icon: 'soundcloud', color: 'FF3300' },
@@ -163,7 +164,7 @@ const PublicLinks = () => {
             <button
               onClick={handlePlayClick}
               className="w-full py-5 rounded-full flex items-center justify-center gap-3 font-headline font-bold text-sm tracking-wider uppercase active:scale-95 transition-transform hover:opacity-90 shadow-lg text-white"
-              style={{ background: `linear-gradient(135deg, ${data.featuredVideo.highlightColor || '#CC4E3D'}, #000)` }}
+              style={{ background: `linear-gradient(135deg, ${data.featuredVideo.highlightColor || '#CC4E3D'}, ${data.featuredVideo.highlightColor2 || '#000000'})` }}
             >
               <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>play_arrow</span>
               Escuchar el Nuevo Sencillo
@@ -171,9 +172,9 @@ const PublicLinks = () => {
           </div>
         </section>
 
-        {/* ── Centralized Links ── */}
+        {/* ── Links Centralizados ── */}
         <section className="px-6 mt-16 space-y-4">
-          <h4 className="font-label text-[10px] text-center tracking-[0.4em] text-white/30 uppercase mb-8">Connect with the sound</h4>
+          <h4 className="font-label text-[10px] text-center tracking-[0.4em] text-white/30 uppercase mb-8">Conecta con el sonido</h4>
           {data.links.filter(l => l.active).sort((a, b) => a.order - b.order).map(link => {
             const platformInfo = PLATFORM_DATA[link.platform] || PLATFORM_DATA.Otro;
 
@@ -206,7 +207,7 @@ const PublicLinks = () => {
           <div className="px-8 mb-8 flex justify-between items-end">
             <h2 className="font-headline font-black text-4xl tracking-tighter uppercase">Próximos<br />Shows</h2>
             <a href="#shows" className="font-label text-[10px] text-primary font-bold tracking-[0.2em] hover:opacity-70 transition-opacity">
-              View All
+              Ver todos
             </a>
           </div>
 
@@ -225,7 +226,7 @@ const PublicLinks = () => {
                       rel="noreferrer"
                       className="px-6 py-2 bg-primary-gradient rounded-full font-headline font-bold text-[10px] tracking-widest uppercase active:scale-95 transition-all"
                     >
-                      Tickets
+                      Entradas
                     </a>
                   ) : (
                     <span className="px-6 py-2 border border-white/10 rounded-full font-headline font-bold text-[10px] tracking-widest uppercase text-white/30">
@@ -349,7 +350,7 @@ const PublicLinks = () => {
           ))}
         </div>
         <p className="font-label text-xs font-medium tracking-[0.2em] uppercase text-white/40">
-          © 2024 {data.profile.name}. ALL RIGHTS RESERVED.
+          © 2024 {data.profile.name}. Todos los derechos reservados.
         </p>
       </footer>
 
@@ -372,7 +373,7 @@ const PublicLinks = () => {
           onClick={e => { e.preventDefault(); document.getElementById('merch')?.scrollIntoView({ behavior: 'smooth' }); }}
           className="flex flex-col items-center justify-center text-white/50 hover:text-white transition-all"
         >
-          <span className="material-symbols-outlined">payments</span>
+          <span className="material-symbols-outlined">checkroom</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MERCH</span>
         </a>
       </nav>

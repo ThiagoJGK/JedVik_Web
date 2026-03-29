@@ -6,12 +6,11 @@ import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminStats from './pages/admin/pages/AdminStats';
 import AdminLinks from './pages/admin/pages/AdminLinks';
-import AdminShows from './pages/admin/pages/AdminShows';
 import AdminPerfil from './pages/admin/pages/AdminPerfil';
 import AdminLanzamiento from './pages/admin/pages/AdminLanzamiento';
-import AdminMerch from './pages/admin/pages/AdminMerch';
 import AdminFans from './pages/admin/pages/AdminFans';
 import AdminMore from './pages/admin/pages/AdminMore';
+import AdminEnDesarrollo from './pages/admin/pages/AdminEnDesarrollo';
 
 function App() {
   return (
@@ -29,10 +28,10 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminStats />} />
               <Route path="links" element={<AdminLinks />} />
-              <Route path="shows" element={<AdminShows />} />
+              <Route path="shows" element={<AdminEnDesarrollo />} />
               <Route path="perfil" element={<AdminPerfil />} />
               <Route path="lanzamiento" element={<AdminLanzamiento />} />
-              <Route path="merch" element={<AdminMerch />} />
+              <Route path="merch" element={<AdminEnDesarrollo />} />
               <Route path="fans" element={<AdminFans />} />
               <Route path="more" element={<AdminMore />} />
             </Route>

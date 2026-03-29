@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 
 interface ImageUploadProps {
   onUploadSuccess: (url: string) => void;
@@ -6,63 +6,34 @@ interface ImageUploadProps {
   label: string;
 }
 
-// NOTE TO USER: Replace these with your actual Cloudinary credentials
-const CLOUDINARY_CLOUD_NAME = 'dpm4judv4'; // Your Cloud Name
-const CLOUDINARY_UPLOAD_PRESET = 'Jed Vik'; // Your Unsigned Upload Preset
-
-declare global {
-  interface Window {
-    cloudinary: any;
-  }
-}
+const CLOUDINARY_CLOUD_NAME = 'dpm4judv4';
+const CLOUDINARY_UPLOAD_PRESET = 'Jed Vik';
 
 const ImageUpload: React.FC<ImageUploadProps> = ({ onUploadSuccess, currentImage, label }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const handleUpload = () => {
-    if (!window.cloudinary) {
-      console.error('Cloudinary widget not loaded');
-      return;
-    }
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const widget = window.cloudinary.createUploadWidget(
-      {
-        cloudName: CLOUDINARY_CLOUD_NAME,
-        uploadPreset: CLOUDINARY_UPLOAD_PRESET,
-        sources: ['local', 'camera', 'url'],
-        multiple: false,
-        cropping: true,
-        showSkipCropButton: false,
-        styles: {
-          palette: {
-            window: '#1a1a1a',
-            windowBorder: '#262626',
-            tabIcon: '#CC4E3D',
-            menuIcons: '#ffffff',
-            textDark: '#000000',
-            textLight: '#ffffff',
-            link: '#CC4E3D',
-            action: '#CC4E3D',
-            inactiveTabIcon: '#adaaaa',
-            error: '#ff4e3d',
-            inProgress: '#f68a2f',
-            complete: '#20B832',
-            sourceBg: '#0e0e0e'
-          },
-          fonts: {
-            default: null,
-            "'Manrope', sans-serif": 'https://fonts.googleapis.com/css2?family=Manrope:wght@400;700&display=swap'
-          }
-        }
-      },
-      (error: any, result: any) => {
-        if (!error && result && result.event === 'success') {
-          const url = result.info.secure_url;
-          onUploadSuccess(url);
-        }
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.secure_url) {
+        onUploadSuccess(data.secure_url);
       }
-    );
-
-    widget.open();
+    } catch (err) {
+      console.error('Error al subir imagen:', err);
+    }
+    // Reset so same file can be re-selected if needed
+    e.target.value = '';
   };
 
   return (
@@ -70,29 +41,31 @@ const ImageUpload: React.FC<ImageUploadProps> = ({ onUploadSuccess, currentImage
       <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">
         {label}
       </label>
-      <div className="flex items-center gap-4 bg-surface-container-high rounded-3xl p-4 border border-white/5">
-        <div className="w-16 h-16 rounded-2xl bg-surface-container-highest overflow-hidden flex-shrink-0 border border-white/10">
-          {currentImage ? (
-            <img src={currentImage} alt="Preview" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex items-center justify-center text-white/10">
-              <span className="material-symbols-outlined text-3xl">image</span>
+      <div
+        onClick={() => inputRef.current?.click()}
+        className="relative flex items-center justify-center aspect-square rounded-2xl overflow-hidden border border-white/10 bg-surface-container-highest cursor-pointer hover:border-white/30 transition-all group"
+      >
+        {currentImage ? (
+          <>
+            <img src={currentImage} alt="Vista previa" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+              <span className="material-symbols-outlined text-white text-3xl">photo_camera</span>
             </div>
-          )}
-        </div>
-        <div className="flex-1">
-          <button
-            type="button"
-            onClick={handleUpload}
-            className="px-6 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white/80 font-headline font-bold text-[10px] uppercase tracking-widest transition-all active:scale-95"
-          >
-            {currentImage ? 'Cambiar Foto' : 'Subir Imagen'}
-          </button>
-          <p className="text-[9px] text-white/20 mt-2 ml-2 uppercase tracking-tight">
-            JPG, PNG o WEBP. Redimensión automática.
-          </p>
-        </div>
+          </>
+        ) : (
+          <div className="flex flex-col items-center gap-2 text-white/20 group-hover:text-white/40 transition-colors">
+            <span className="material-symbols-outlined text-4xl">add_photo_alternate</span>
+            <span className="font-label text-[9px] uppercase tracking-widest">Elegir foto</span>
+          </div>
+        )}
       </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="hidden"
+      />
     </div>
   );
 };

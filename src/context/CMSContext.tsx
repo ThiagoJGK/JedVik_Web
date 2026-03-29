@@ -36,6 +36,7 @@ export interface CMSData {
     artists?: string;
     coverUrl?: string;
     highlightColor?: string;
+    highlightColor2?: string;
     duration?: string;
   };
   merch: {
@@ -67,6 +68,7 @@ const defaultData: CMSData = {
     artists: "Jed Vik feat. LUNA",
     coverUrl: "",
     highlightColor: "#CC4E3D",
+    highlightColor2: "#000000",
     duration: "04:12"
   },
   merch: {

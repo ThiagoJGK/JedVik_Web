@@ -8,6 +8,7 @@ const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
   Spotify: { icon: 'spotify', color: '1DB954' },
   Instagram: { icon: 'instagram', color: 'E4405F' },
   YouTube: { icon: 'youtube', color: 'FF0000' },
+  'YouTube Music': { icon: 'youtubemusic', color: 'FF0000' },
   TikTok: { icon: 'tiktok', color: 'FFFFFF' },
   'Apple Music': { icon: 'apple', color: 'FA243C' },
   SoundCloud: { icon: 'soundcloud', color: 'FF3300' },
