@@ -90,23 +90,39 @@ const PublicLinks = () => {
 
       <main className="relative pb-32">
         {/* ── Hero ── */}
-        <section className="relative h-[70vh] w-full flex flex-col justify-end items-center overflow-hidden">
+        <section className="relative h-[85vh] w-full flex flex-col justify-center items-center overflow-hidden bg-black">
+          {/* Layer 1: Background Image (Blurred/Dimmed) */}
           <div className="absolute inset-0 z-0">
             <img
-              className="w-full h-full object-cover grayscale brightness-50 contrast-125"
-              alt={data.profile.name}
+              className="w-full h-full object-cover grayscale brightness-[0.3] contrast-125 blur-[2px]"
+              alt=""
               src={data.profile.imageUrl || "https://lh3.googleusercontent.com/aida-public/AB6AXuAfnhq2V3O7ArD6xEf0LtG25vEF16kfQa5klXM945PThYbjhto6AFkqE5vZeBYdOyW9NtjVVNsOoqXByKl3zZ7_5cyOSdUG9mwfaFkFc8q4lcuACGG516o-TrV9WzUpjWQJEbXSNfIbpj-Vrz2dVYwJvIZ_iDjKiqzQwKQYu97QNJeylLPKBNJZqHDbMHnrUe-OI0oA4oy0LRaG-lFxceVgdj56zsxFsgq3red9EV9SpdHb96XX-nuIPnCKvHcOSJzMhfAZIAk38bM"}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent" />
           </div>
-          <div className="relative z-10 px-6 text-center mb-12">
-            <h2 className="font-headline font-black text-7xl md:text-9xl tracking-tighter uppercase leading-[0.8] mb-4">
+
+          {/* Layer 2: Giant Background Text */}
+          <div className="relative z-10 w-full flex justify-center select-none pointer-events-none overflow-hidden">
+            <h2 className="font-headline font-black text-[28vw] md:text-[22vw] tracking-tighter uppercase leading-[0.75] text-white/10 whitespace-nowrap text-center">
               {data.profile.name.split(' ')[0]}<br />
-              <span className="text-transparent" style={{ WebkitTextStroke: '1px rgba(255,255,255,0.3)' }}>
-                {data.profile.name.split(' ').slice(1).join(' ')}
-              </span>
+              {data.profile.name.split(' ').slice(1).join(' ')}
             </h2>
-            <p className="font-label text-xs tracking-[0.3em] text-white/60 uppercase">
+          </div>
+
+          {/* Layer 3: Foreground Silhouette (Artist Cutout) */}
+          {data.profile.silhouetteUrl && (
+            <div className="absolute bottom-0 left-1/2 -translate-x-1/2 z-20 w-full h-full flex justify-center items-end">
+              <img 
+                src={data.profile.silhouetteUrl} 
+                alt={data.profile.name}
+                className="h-[95%] w-auto object-contain object-bottom drop-shadow-[0_0_30px_rgba(0,0,0,0.8)]"
+              />
+            </div>
+          )}
+
+          {/* Overlay Content (Bio, etc.) */}
+          <div className="absolute bottom-20 left-0 right-0 z-30 px-6 text-center">
+            <p className="font-label text-[10px] tracking-[0.5em] text-white/40 uppercase mb-2 font-bold drop-shadow-lg">
               {data.profile.bio || 'The Sonic Monolith Tour 2024'}
             </p>
           </div>

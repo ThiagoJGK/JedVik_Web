@@ -23,6 +23,7 @@ export interface CMSData {
     name: string;
     bio: string;
     imageUrl: string;
+    silhouetteUrl?: string;
   };
   appearance: {
     themeColor: string;
@@ -48,7 +49,8 @@ const defaultData: CMSData = {
   profile: {
     name: "JED VIK",
     bio: "Artista y Productor.",
-    imageUrl: ""
+    imageUrl: "",
+    silhouetteUrl: ""
   },
   appearance: {
     themeColor: "#00FF41"
