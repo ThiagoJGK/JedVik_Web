@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useCMS } from '../context/CMSContext';
 import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -89,7 +90,7 @@ const PublicLinks = () => {
 
       <main className="relative pb-32">
         {/* ── Hero ── */}
-        <section className="relative h-[795px] w-full flex flex-col justify-end items-center overflow-hidden">
+        <section className="relative h-[70vh] w-full flex flex-col justify-end items-center overflow-hidden">
           <div className="absolute inset-0 z-0">
             <img
               className="w-full h-full object-cover grayscale brightness-50 contrast-125"
@@ -112,7 +113,7 @@ const PublicLinks = () => {
         </section>
 
         {/* ── Priority Release ── */}
-        <section className="px-6 -mt-20 relative z-20">
+        <section className="px-6 -mt-32 relative z-20">
           <div className="bg-surface-container rounded-xl p-6 shadow-2xl relative overflow-hidden group">
             {/* Adaptive Glow */}
             <div 
@@ -133,7 +134,7 @@ const PublicLinks = () => {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <span className="font-label text-[10px] tracking-widest font-bold uppercase" style={{ color: data.featuredVideo.highlightColor || '#CC4E3D' }}>Latest Release</span>
+                <span className="font-label text-[10px] tracking-widest font-bold uppercase" style={{ color: data.featuredVideo.highlightColor || '#CC4E3D' }}>Último Lanzamiento</span>
                 <h3 className="font-headline text-2xl font-black leading-tight uppercase">
                   {data.featuredVideo.title || 'ECHOS IN THE VOID'}
                 </h3>
@@ -360,22 +361,20 @@ const PublicLinks = () => {
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>audiotrack</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MUSIC</span>
         </a>
-        <a
-          href="#shows"
-          onClick={e => { e.preventDefault(); document.getElementById('shows')?.scrollIntoView({ behavior: 'smooth' }); }}
+        <Link
+          to="/proximamente"
           className="flex flex-col items-center justify-center text-white/50 hover:text-white transition-all"
         >
           <span className="material-symbols-outlined">confirmation_number</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">SHOWS</span>
-        </a>
-        <a
-          href="#merch"
-          onClick={e => { e.preventDefault(); document.getElementById('merch')?.scrollIntoView({ behavior: 'smooth' }); }}
+        </Link>
+        <Link
+          to="/proximamente"
           className="flex flex-col items-center justify-center text-white/50 hover:text-white transition-all"
         >
-          <span className="material-symbols-outlined">checkroom</span>
+          <span className="material-symbols-outlined">apparel</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MERCH</span>
-        </a>
+        </Link>
       </nav>
     </div>
   );

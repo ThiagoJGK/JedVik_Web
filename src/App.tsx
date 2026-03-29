@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { CMSProvider } from './context/CMSContext';
 import { AuthProvider } from './context/AuthContext';
 import PublicLinks from './pages/PublicLinks';
+import Proximamente from './pages/Proximamente';
 import AdminLogin from './pages/admin/AdminLogin';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminStats from './pages/admin/pages/AdminStats';
@@ -23,6 +24,7 @@ function App() {
 
             {/* Admin login (public) */}
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/proximamente" element={<Proximamente />} />
 
             {/* Admin panel (protected via AdminLayout) */}
             <Route path="/admin" element={<AdminLayout />}>

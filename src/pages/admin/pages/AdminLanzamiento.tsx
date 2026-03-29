@@ -13,7 +13,9 @@ const AdminLanzamiento = () => {
   const { data, updateData } = useCMS();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [extracting, setExtracting] = useState(false);
   const playerRef = useRef<any>(null);
+  const debounceTimer = useRef<any>(null);
   
   const [form, setForm] = useState({
     url: data.featuredVideo.url || '',
@@ -57,30 +59,40 @@ const AdminLanzamiento = () => {
     setForm(prev => ({ ...prev, url }));
     
     const videoId = extractYouTubeID(url);
-    if (videoId && window.YT && window.YT.Player) {
-      // Create a temporary hidden player to get duration
-      const tempDiv = document.createElement('div');
-      tempDiv.id = 'temp-yt-player';
-      tempDiv.style.display = 'none';
-      document.body.appendChild(tempDiv);
+    if (!videoId) return;
 
-      new window.YT.Player('temp-yt-player', {
-        videoId: videoId,
-        events: {
-          onReady: (event: any) => {
-            const durationSeconds = event.target.getDuration();
-            if (durationSeconds > 0) {
-              setForm(prev => ({ ...prev, duration: formatDuration(durationSeconds) }));
+    // Debounce to avoid spamming players
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
+    
+    debounceTimer.current = setTimeout(() => {
+      if (window.YT && window.YT.Player) {
+        setExtracting(true);
+        // Create a temporary hidden player to get duration
+        const tempDiv = document.createElement('div');
+        tempDiv.id = 'temp-yt-player';
+        tempDiv.style.display = 'none';
+        document.body.appendChild(tempDiv);
+
+        new window.YT.Player('temp-yt-player', {
+          videoId: videoId,
+          events: {
+            onReady: (event: any) => {
+              const durationSeconds = event.target.getDuration();
+              if (durationSeconds > 0) {
+                setForm(prev => ({ ...prev, duration: formatDuration(durationSeconds) }));
+              }
+              setExtracting(false);
+              event.target.destroy();
+              tempDiv.remove();
+            },
+            onError: () => {
+              setExtracting(false);
+              tempDiv.remove();
             }
-            event.target.destroy();
-            tempDiv.remove();
-          },
-          onError: () => {
-            tempDiv.remove();
           }
-        }
-      });
-    }
+        });
+      }
+    }, 1000);
   };
 
   const handleSave = async () => {
@@ -167,13 +179,20 @@ const AdminLanzamiento = () => {
           </div>
           <div>
             <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Duración</label>
-            <input
-              type="text"
-              value={form.duration}
-              onChange={e => setForm(prev => ({ ...prev, duration: e.target.value }))}
-              placeholder="00:00"
-              className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all text-center"
-            />
+            <div className="relative">
+              <input
+                type="text"
+                value={form.duration}
+                onChange={e => setForm(prev => ({ ...prev, duration: e.target.value }))}
+                placeholder="00:00"
+                className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all text-center"
+              />
+              {extracting && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary text-sm animate-spin">progress_activity</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 

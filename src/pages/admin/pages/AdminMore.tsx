@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 const MORE_ITEMS = [
   { to: '/admin/lanzamiento', label: 'Lanzamiento', icon: 'rocket_launch', desc: 'Configura el track destacado' },
   { to: '/admin/perfil',      label: 'Perfil',      icon: 'person',        desc: 'Tu bio, nombre e imagen' },
-  { to: '/admin/merch',       label: 'Merch',       icon: 'shopping_bag',  desc: 'Control de la tienda' },
+  { to: '/admin/merch',       label: 'Merch',       icon: 'apparel',       desc: 'Control de la tienda' },
 ];
 
 const AdminMore = () => {
