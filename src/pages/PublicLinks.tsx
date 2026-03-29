@@ -156,7 +156,7 @@ const PublicLinks = () => {
               </div>
               <div className="flex justify-between text-[10px] font-label text-white/40 tracking-widest">
                 <span>01:24</span>
-                <span>04:12</span>
+                <span>{data.featuredVideo.duration || '04:12'}</span>
               </div>
             </div>
 

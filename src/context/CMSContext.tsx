@@ -36,6 +36,7 @@ export interface CMSData {
     artists?: string;
     coverUrl?: string;
     highlightColor?: string;
+    duration?: string;
   };
   merch: {
     shopUrl: string;
@@ -65,7 +66,8 @@ const defaultData: CMSData = {
     title: "ECHOS IN THE VOID",
     artists: "Jed Vik feat. LUNA",
     coverUrl: "",
-    highlightColor: "#CC4E3D"
+    highlightColor: "#CC4E3D",
+    duration: "04:12"
   },
   merch: {
     shopUrl: ""
@@ -80,6 +82,21 @@ interface CMSContextType {
 
 const CMSContext = createContext<CMSContextType | undefined>(undefined);
 
+// Simple Deep Merge helper
+const deepMerge = (target: any, source: any) => {
+  const output = { ...target };
+  if (source && typeof source === 'object') {
+    Object.keys(source).forEach(key => {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        output[key] = deepMerge(target[key] || {}, source[key]);
+      } else {
+        output[key] = source[key];
+      }
+    });
+  }
+  return output;
+};
+
 export const CMSProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [data, setData] = useState<CMSData>(defaultData);
   const [loading, setLoading] = useState(true);
@@ -90,7 +107,8 @@ export const CMSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     const unsubscribe = onSnapshot(docRef, (docSnap) => {
       if (docSnap.exists()) {
-        setData({ ...defaultData, ...docSnap.data() as CMSData });
+        const remoteData = docSnap.data();
+        setData(deepMerge(defaultData, remoteData));
       } else {
         // Inicializar documento en DB si no existe (Requiere configuración de reglas en Firebase)
         setDoc(docRef, defaultData).catch(err => console.warn("No se pudo autogenerar documento (probable error de permisos)", err));
@@ -104,9 +122,9 @@ export const CMSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     return () => unsubscribe();
   }, []);
 
-  const updateData = async (newData: Partial<CMSData>) => {
-    // Actualización local optimista
-    setData(prev => ({ ...prev, ...newData }));
+  const updateData = async (newData: any) => {
+    // Actualización local optimista (usando deep merge para consistencia local)
+    setData(prev => deepMerge(prev, newData));
     
     try {
       const docRef = doc(db, 'cms', 'jedvik');
@@ -114,7 +132,6 @@ export const CMSProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await setDoc(docRef, newData, { merge: true });
     } catch (error) {
       console.error("Error guardando en Firebase:", error);
-      // Opcional: Revertir si el usuario prefiriese, aquí solo notificamos el error visualmente o silencioso
     }
   };
 

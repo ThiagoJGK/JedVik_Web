@@ -1,11 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useCMS } from '../../../context/CMSContext';
 import ImageUpload from '../../../components/admin/ImageUpload';
+
+declare global {
+  interface Window {
+    onYouTubeIframeAPIReady: () => void;
+    YT: any;
+  }
+}
 
 const AdminLanzamiento = () => {
   const { data, updateData } = useCMS();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const playerRef = useRef<any>(null);
   
   const [form, setForm] = useState({
     url: data.featuredVideo.url || '',
@@ -13,7 +21,66 @@ const AdminLanzamiento = () => {
     artists: data.featuredVideo.artists || '',
     coverUrl: data.featuredVideo.coverUrl || '',
     highlightColor: data.featuredVideo.highlightColor || '#CC4E3D',
+    duration: data.featuredVideo.duration || '04:12',
   });
+
+  // Load YouTube API
+  useEffect(() => {
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = "https://www.youtube.com/iframe_api";
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+    }
+
+    return () => {
+      if (playerRef.current) {
+        playerRef.current.destroy();
+      }
+    };
+  }, []);
+
+  const formatDuration = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const extractYouTubeID = (url: string) => {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[7].length === 11) ? match[7] : null;
+  };
+
+  const handleUrlChange = (url: string) => {
+    setForm(prev => ({ ...prev, url }));
+    
+    const videoId = extractYouTubeID(url);
+    if (videoId && window.YT && window.YT.Player) {
+      // Create a temporary hidden player to get duration
+      const tempDiv = document.createElement('div');
+      tempDiv.id = 'temp-yt-player';
+      tempDiv.style.display = 'none';
+      document.body.appendChild(tempDiv);
+
+      new window.YT.Player('temp-yt-player', {
+        videoId: videoId,
+        events: {
+          onReady: (event: any) => {
+            const durationSeconds = event.target.getDuration();
+            if (durationSeconds > 0) {
+              setForm(prev => ({ ...prev, duration: formatDuration(durationSeconds) }));
+            }
+            event.target.destroy();
+            tempDiv.remove();
+          },
+          onError: () => {
+            tempDiv.remove();
+          }
+        }
+      });
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -24,7 +91,8 @@ const AdminLanzamiento = () => {
         title: form.title,
         artists: form.artists,
         coverUrl: form.coverUrl,
-        highlightColor: form.highlightColor
+        highlightColor: form.highlightColor,
+        duration: form.duration
       } 
     });
     setSaving(false);
@@ -67,15 +135,27 @@ const AdminLanzamiento = () => {
           </div>
         </div>
 
-        <div>
-          <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Título del Track</label>
-          <input
-            type="text"
-            value={form.title}
-            onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
-            placeholder="Título de la canción"
-            className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Título del Track</label>
+            <input
+              type="text"
+              value={form.title}
+              onChange={e => setForm(prev => ({ ...prev, title: e.target.value }))}
+              placeholder="Título de la canción"
+              className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all"
+            />
+          </div>
+          <div>
+            <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2 ml-4">Duración</label>
+            <input
+              type="text"
+              value={form.duration}
+              onChange={e => setForm(prev => ({ ...prev, duration: e.target.value }))}
+              placeholder="00:00"
+              className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all text-center"
+            />
+          </div>
         </div>
 
         <div>
@@ -94,7 +174,7 @@ const AdminLanzamiento = () => {
           <input
             type="url"
             value={form.url}
-            onChange={e => setForm(prev => ({ ...prev, url: e.target.value }))}
+            onChange={e => handleUrlChange(e.target.value)}
             placeholder="https://..."
             className="w-full bg-surface-container-highest rounded-full px-6 py-4 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-white/10 transition-all"
           />
