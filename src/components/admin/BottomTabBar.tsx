@@ -3,7 +3,7 @@ import { NavLink } from 'react-router-dom';
 const TABS = [
   { to: '/admin',       label: 'Stats',         icon: 'leaderboard',       end: true },
   { to: '/admin/links', label: 'Links',         icon: 'link' },
-  { to: '/admin/shows', label: 'Shows',         icon: 'confirmation_number' },
+  { to: '/admin/promo', label: 'Promo',         icon: 'share' },
   { to: '/admin/fans',  label: 'Fans',          icon: 'groups' },
 ];
 

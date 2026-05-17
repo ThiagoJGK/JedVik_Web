@@ -42,6 +42,7 @@ export interface CMSData {
   };
   merch: {
     shopUrl: string;
+    blurred?: boolean;
   };
 }
 
@@ -74,7 +75,8 @@ const defaultData: CMSData = {
     duration: "04:12"
   },
   merch: {
-    shopUrl: ""
+    shopUrl: "",
+    blurred: false
   }
 };
 

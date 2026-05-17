@@ -125,7 +125,7 @@ const LoadingScreen = ({ loading }: { loading: boolean }) => {
     <div className={`fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center transition-opacity duration-700 ease-out ${fading ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
       <div className="text-center select-none px-8">
         <p className="font-label text-[9px] tracking-[0.5em] uppercase text-white/20 mb-8 animate-pulse">Cargando</p>
-        <h1 className="font-headline font-black text-[22vw] md:text-[14vw] tracking-tighter uppercase leading-none text-white">
+        <h1 className="font-headline font-black text-[13vw] tracking-tighter uppercase leading-none text-white whitespace-nowrap">
           <MatrixText text="JED VIK" />
         </h1>
         <div className="mt-10 w-32 h-px mx-auto bg-white/30 animate-pulse" />
@@ -315,11 +315,19 @@ const PublicLinks = () => {
           {/* Gradient base bajo la silueta */}
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent" />
 
-          {/* Nombre del artista — tercio superior, DETRÁS de la silueta (z-1) */}
-          <div className="absolute top-[18%] left-0 right-0 px-16" style={{zIndex: 1}}>
-            <h2 className="font-headline font-black text-[10vw] tracking-tighter uppercase leading-none text-white drop-shadow-[0_4px_60px_rgba(0,0,0,0.7)] select-none">
+          {/* Nombre del artista + intro breve — DETRÁS de la silueta (z-1) */}
+          <div className="absolute top-[18%] left-0 right-0 px-16 flex items-start" style={{zIndex: 1}}>
+            <h2 className="font-headline font-black text-[10vw] tracking-tighter uppercase leading-none text-white drop-shadow-[0_4px_60px_rgba(0,0,0,0.7)] select-none flex-shrink-0">
               <MatrixText text={data.profile.name} />
             </h2>
+            <div className="ml-[4vw] mr-auto pt-[2.2vw] text-left flex-shrink-0">
+              <p className="font-label text-xs md:text-base lg:text-lg tracking-[0.25em] uppercase text-white/60 whitespace-nowrap">
+                <MatrixText text={data.profile.bio?.replace('.', '') || 'ARTISTA & PRODUCTOR'} />
+              </p>
+              <p className="font-label text-[9px] md:text-xs tracking-[0.3em] uppercase text-white/25 mt-2 whitespace-nowrap">
+                ↓ SCROLL PARA DESCUBRIR
+              </p>
+            </div>
           </div>
 
           {/* Silhouette si existe — DELANTE del texto (z-2) */}
@@ -348,7 +356,7 @@ const PublicLinks = () => {
               />
               {/* Cover */}
               <div
-                className="w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden relative z-10"
+                className="w-20 h-20 flex-shrink-0 rounded-[14px] overflow-hidden relative z-10"
                 style={{ boxShadow: `0 0 30px ${data.featuredVideo.highlightColor || '#CC4E3D'}55` }}
               >
                 {data.featuredVideo.coverUrl && (
@@ -546,7 +554,7 @@ const PublicLinks = () => {
         {/* ── Merch Carousel ── */}
         <section id="merch" className="mt-20 md:max-w-2xl md:mx-auto">
           <div className="flex justify-between items-center px-8 mb-8">
-            <h2 className="font-headline font-black text-4xl tracking-tighter uppercase">
+            <h2 className="font-headline font-black text-3xl md:text-4xl tracking-tighter uppercase whitespace-nowrap">
               <MatrixTitle>Merch Oficial</MatrixTitle>
             </h2>
             <a
@@ -585,6 +593,13 @@ const PublicLinks = () => {
                 </a>
               ))}
             </div>
+            {/* Overlay blur cuando merch está ofuscado */}
+            {data.merch?.blurred && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(0,0,0,0.25)' }}>
+                <span className="material-symbols-outlined text-5xl mb-3" style={{ color: 'rgba(255,255,255,0.25)' }}>lock</span>
+                <p className="font-label text-[10px] uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.25)' }}>Próximamente</p>
+              </div>
+            )}
           </div>
         </section>
 

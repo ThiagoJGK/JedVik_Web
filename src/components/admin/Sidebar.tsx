@@ -7,6 +7,7 @@ const NAV_ITEMS = [
   { to: '/admin/shows',     label: 'Shows',         icon: 'confirmation_number' },
   { to: '/admin/perfil',    label: 'Perfil',        icon: 'person' },
   { to: '/admin/lanzamiento', label: 'Lanzamiento', icon: 'rocket_launch' },
+  { to: '/admin/promo',     label: 'Promo Links',   icon: 'share' },
   { to: '/admin/merch',     label: 'Merch',         icon: 'shopping_bag' },
   { to: '/admin/fans',      label: 'Fans',          icon: 'groups' },
 ];
