@@ -43,6 +43,18 @@ export default function AdminPromoLinkEditor() {
   const [loadingEdit, setLoadingEdit] = useState(false);
   const [urlPasted, setUrlPasted] = useState(false);
 
+  // Spotify API settings state
+  const [spotifyClientId, setSpotifyClientId] = useState(localStorage.getItem('spotify_client_id') || '');
+  const [spotifyClientSecret, setSpotifyClientSecret] = useState(localStorage.getItem('spotify_client_secret') || '');
+  const [showApiSettings, setShowApiSettings] = useState(false);
+
+  function saveSpotifyCredentials() {
+    localStorage.setItem('spotify_client_id', spotifyClientId.trim());
+    localStorage.setItem('spotify_client_secret', spotifyClientSecret.trim());
+    alert('Credenciales de Spotify guardadas correctamente.');
+    setShowApiSettings(false);
+  }
+
   // Load existing data when editing
   useEffect(() => {
     if (isEdit && id) {
@@ -211,6 +223,63 @@ export default function AdminPromoLinkEditor() {
         )}
       </div>
 
+      {/* Settings toggle */}
+      <div className="mb-6">
+        <button
+          onClick={() => setShowApiSettings(!showApiSettings)}
+          className="flex items-center gap-2 px-3.5 py-2 rounded-full font-label text-[10px] font-bold uppercase tracking-widest text-white/40 hover:text-white/80 transition-all border border-white/5 bg-white/[0.02]"
+        >
+          <span className="material-symbols-outlined text-[14px]">settings</span>
+          {showApiSettings ? 'Ocultar ajustes de Spotify' : 'Configurar Automatización (Spotify)'}
+          {spotifyClientId && spotifyClientSecret && (
+            <span className="w-1.5 h-1.5 rounded-full bg-[#1DB954] animate-pulse ml-1" title="Automatización Activa" />
+          )}
+        </button>
+
+        {showApiSettings && (
+          <div
+            className="mt-3 p-4 rounded-2xl border border-white/5 flex flex-col gap-3"
+            style={{ background: '#141414' }}
+          >
+            <h3 className="font-label text-[10px] uppercase tracking-wider text-[#1DB954] font-bold">
+              Configuración de Spotify Developer
+            </h3>
+            <p className="font-body text-xs text-white/40 leading-relaxed">
+              Consigue tus credenciales gratis en <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener noreferrer" className="text-[#1DB954] underline hover:text-white transition-colors">Spotify Dashboard</a> para habilitar la búsqueda y autocompletado 100% automático.
+            </p>
+            
+            <div className="flex flex-col gap-1">
+              <label className="font-label text-[9px] uppercase tracking-wider text-white/30 px-1">Client ID</label>
+              <input
+                type="text"
+                value={spotifyClientId}
+                onChange={e => setSpotifyClientId(e.target.value)}
+                placeholder="Pegar tu Client ID..."
+                className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-sm text-white placeholder-white/20 outline-none focus:border-[#1DB954]/30"
+              />
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label className="font-label text-[9px] uppercase tracking-wider text-white/30 px-1">Client Secret</label>
+              <input
+                type="password"
+                value={spotifyClientSecret}
+                onChange={e => setSpotifyClientSecret(e.target.value)}
+                placeholder="Pegar tu Client Secret..."
+                className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/5 text-sm text-white placeholder-white/20 outline-none focus:border-[#1DB954]/30"
+              />
+            </div>
+
+            <button
+              onClick={saveSpotifyCredentials}
+              className="mt-2 py-2.5 rounded-xl font-label font-bold text-[10px] uppercase tracking-widest text-black bg-[#1DB954] hover:bg-[#1ed760] transition-colors"
+            >
+              Guardar credenciales
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Preview card — appears after fetch */}
       {previewReady && (
         <div
@@ -329,6 +398,17 @@ export default function AdminPromoLinkEditor() {
           {PLATFORMS.map(p => {
             const val = platforms[p.key] || '';
             const detected = Boolean(val);
+            
+            // Search URLs generator
+            const searchUrls: Record<string, string> = {
+              spotify: `https://open.spotify.com/search/${encodeURIComponent(artist + ' ' + title)}`,
+              appleMusic: `https://music.apple.com/us/search?term=${encodeURIComponent(artist + ' ' + title)}`,
+              amazonMusic: `https://music.amazon.com/search/${encodeURIComponent(artist + ' ' + title)}`,
+              tidal: `https://listen.tidal.com/search?q=${encodeURIComponent(artist + ' ' + title)}`,
+              deezer: `https://www.deezer.com/search/${encodeURIComponent(artist + ' ' + title)}`,
+              soundcloud: `https://soundcloud.com/search?q=${encodeURIComponent(artist + ' ' + title)}`,
+            };
+
             return (
               <div
                 key={p.key}
@@ -345,7 +425,7 @@ export default function AdminPromoLinkEditor() {
                     {p.label}
                   </span>
 
-                  {/* Status badge */}
+                  {/* Status badge & Search helper */}
                   {detected ? (
                     <span
                       className="text-[10px] font-label px-2 py-0.5 rounded-full flex-shrink-0"
@@ -354,9 +434,34 @@ export default function AdminPromoLinkEditor() {
                       ✓ Detectado
                     </span>
                   ) : (
-                    <span className="text-[10px] font-label text-white/20 flex-shrink-0">
-                      No detectado
-                    </span>
+                    <div className="flex items-center gap-2 ml-auto">
+                      <span className="text-[10px] font-label text-white/20">
+                        No detectado
+                      </span>
+                      {title && searchUrls[p.key] && (
+                        <a
+                          href={searchUrls[p.key]}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] font-label px-2.5 py-0.5 rounded-full flex-shrink-0 transition-all flex items-center gap-1 border border-white/5"
+                          style={{
+                            borderColor: `${p.color}20`,
+                            color: p.color,
+                            background: `${p.color}08`,
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = `${p.color}20`;
+                            e.currentTarget.style.borderColor = `${p.color}40`;
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = `${p.color}08`;
+                            e.currentTarget.style.borderColor = `rgba(255,255,255,0.05)`;
+                          }}
+                        >
+                          <span className="material-symbols-outlined text-[10px]">search</span> Buscar
+                        </a>
+                      )}
+                    </div>
                   )}
 
                   {/* Clear btn */}
