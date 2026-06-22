@@ -12,9 +12,15 @@ export interface LinkItem {
 
 export interface ShowItem {
   id: string;
+  name: string;
   city: string;
   venue: string;
   date: string;
+  address: string;
+  gmapsUrl: string;
+  price: number;
+  alias: string;
+  whatsapp: string;
   url: string;
 }
 
@@ -62,7 +68,19 @@ const defaultData: CMSData = {
     { id: '3', platform: 'YouTube', url: 'https://youtube.com/', active: true, order: 2 }
   ],
   shows: [
-    { id: '1', city: 'Buenos Aires', venue: 'Teatro Vórterix', date: '24 Oct 2026', url: '#' }
+    { 
+      id: '1', 
+      name: 'Tour 2026', 
+      city: 'Buenos Aires', 
+      venue: 'Teatro Vórterix', 
+      date: '2026-10-24T21:00', 
+      address: 'Av. Federico Lacroze 3455', 
+      gmapsUrl: 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3284.8197775988584!2d-58.44857462426066!3d-34.58342417296061!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x95bcb594c965389d%3A0xe67db5cf8e2c7c5!2sTeatro%20Vorterix!5e0!3m2!1ses-419!2sar!4v1700000000000!5m2!1ses-419!2sar', 
+      price: 15000, 
+      alias: 'jedvik.musica', 
+      whatsapp: '5491112345678', 
+      url: '' 
+    }
   ],
   featuredVideo: {
     url: "https://youtu.be/dQw4w9WgXcQ",

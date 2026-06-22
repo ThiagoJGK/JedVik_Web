@@ -44,7 +44,7 @@ const PRESET_CATALOG: Record<string, PresetTrack> = {
   }
 };
 
-function findPresetPlatforms(videoId: string | null, isrc: string | null, title: string, artist: string): Record<string, string> {
+function findPresetPlatforms(videoId: string | null, isrc: string | null, title: string, _artist: string): Record<string, string> {
   const normalizedTitle = title
     .toLowerCase()
     .normalize('NFD')
@@ -95,7 +95,7 @@ function getYouTubeVideoId(url: string): string | null {
 }
 
 /** Helper to make JSONP requests in the browser to bypass CORS */
-function fetchJsonp(url: string, callbackParam: string = 'callback'): Promise<any> {
+export function fetchJsonp(url: string, callbackParam: string = 'callback'): Promise<any> {
   return new Promise((resolve, reject) => {
     const callbackId = `jsonp_cb_${Math.round(1000000 * Math.random())}`;
     const script = document.createElement('script');
@@ -122,11 +122,13 @@ function fetchJsonp(url: string, callbackParam: string = 'callback'): Promise<an
   });
 }
 
-async function searchSpotifyTrack(queryStr: string, clientId: string, clientSecret: string): Promise<{ spotifyUrl: string | null; error?: string }> {
+async function searchSpotifyTrack(queryStr: string, clientId?: string | null, clientSecret?: string | null): Promise<{ spotifyUrl: string | null; error?: string }> {
   try {
-    const res = await fetch(
-      `/api/spotify?q=${encodeURIComponent(queryStr)}&clientId=${encodeURIComponent(clientId)}&clientSecret=${encodeURIComponent(clientSecret)}`
-    );
+    let url = `/api/spotify?q=${encodeURIComponent(queryStr)}`;
+    if (clientId && clientSecret) {
+      url += `&clientId=${encodeURIComponent(clientId)}&clientSecret=${encodeURIComponent(clientSecret)}`;
+    }
+    const res = await fetch(url);
     if (res.ok) {
       const data = await res.json();
       return { spotifyUrl: data.spotifyUrl || null };
@@ -139,6 +141,22 @@ async function searchSpotifyTrack(queryStr: string, clientId: string, clientSecr
   }
 }
 
+async function searchYouTubeTrack(queryStr: string): Promise<{ youtubeMusicUrl: string | null; error?: string }> {
+  try {
+    const res = await fetch(`/api/youtube?q=${encodeURIComponent(queryStr)}`);
+    if (res.ok) {
+      const data = await res.json();
+      return { youtubeMusicUrl: data.youtubeMusicUrl || null };
+    }
+    const errData = await res.json().catch(() => ({}));
+    return { youtubeMusicUrl: null, error: errData.error || 'Failed to search YouTube Music' };
+  } catch (err: any) {
+    console.error('Error searching YouTube Music via proxy:', err);
+    return { youtubeMusicUrl: null, error: err.message || 'Network error' };
+  }
+}
+
+
 export function useOdesli() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -147,14 +165,17 @@ export function useOdesli() {
     setLoading(true);
     setError(null);
 
-    const normalizedUrl = normalizeYouTubeUrl(url);
+    // Decode URL to avoid double-encoding issues
+    const decodedUrl = decodeURIComponent(url);
+
+    const normalizedUrl = normalizeYouTubeUrl(decodedUrl);
     const videoId = getYouTubeVideoId(normalizedUrl);
 
     try {
       // 1. Try Odesli API first
       try {
         const odesliRes = await fetch(
-          `https://api.odesli.co/v1/links?url=${encodeURIComponent(url)}&userCountry=AR`
+          `https://api.odesli.co/v1/links?url=${encodeURIComponent(decodedUrl)}&userCountry=AR`
         );
         if (odesliRes.ok) {
           const odesliData = await odesliRes.json();
@@ -202,9 +223,11 @@ export function useOdesli() {
       let title = '';
       let artist = '';
       let coverUrl = '';
-      const platforms: PromoLinkPlatforms = {
-        youtubeMusic: url // Keep the original user-entered YouTube/YouTube Music URL
-      };
+      const platforms: PromoLinkPlatforms = {};
+      
+      if (url.includes('youtube.com') || url.includes('youtu.be')) {
+        platforms.youtubeMusic = url;
+      }
 
       // A. Query YouTube oEmbed
       try {
@@ -295,26 +318,37 @@ export function useOdesli() {
         }
       }
 
-      // D. Query Spotify Search API if Client ID/Secret are configured in localStorage
-      const spClientId = localStorage.getItem('spotify_client_id');
-      const spClientSecret = localStorage.getItem('spotify_client_secret');
-      if (title && spClientId && spClientSecret) {
+      // D. Query Spotify Search API
+      if (title) {
         try {
           console.log('Attempting automated Spotify Search via proxy...');
           const searchQuery = artist ? `${artist} ${title}` : title;
+          const spClientId = localStorage.getItem('spotify_client_id');
+          const spClientSecret = localStorage.getItem('spotify_client_secret');
           const spotifyResult = await searchSpotifyTrack(searchQuery, spClientId, spClientSecret);
           if (spotifyResult.spotifyUrl) {
             platforms.spotify = spotifyResult.spotifyUrl;
             console.log('Successfully auto-detected Spotify link:', spotifyResult.spotifyUrl);
           } else if (spotifyResult.error) {
-            if (spotifyResult.error.includes('premium subscription required')) {
-              setError('La cuenta del propietario de la API de Spotify requiere una suscripción Premium activa. Por favor, configura tu app usando las credenciales del titular de Spotify Premium (tu cliente).');
-            } else {
-              console.warn('Spotify search failed via proxy:', spotifyResult.error);
-            }
+            console.warn('Spotify search failed via proxy:', spotifyResult.error);
           }
         } catch (spotifyError) {
           console.error('Spotify API search flow failed:', spotifyError);
+        }
+      }
+
+      // E. Query YouTube Music Search API (if not already set because of starting URL)
+      if (title && !platforms.youtubeMusic) {
+        try {
+          console.log('Attempting automated YouTube Search via proxy...');
+          const searchQuery = artist ? `${artist} ${title}` : title;
+          const youtubeResult = await searchYouTubeTrack(searchQuery);
+          if (youtubeResult.youtubeMusicUrl) {
+            platforms.youtubeMusic = youtubeResult.youtubeMusicUrl;
+            console.log('Successfully auto-detected YouTube Music link:', youtubeResult.youtubeMusicUrl);
+          }
+        } catch (youtubeError) {
+          console.error('YouTube API search flow failed:', youtubeError);
         }
       }
 

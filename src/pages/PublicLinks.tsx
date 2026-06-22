@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useCMS } from '../context/CMSContext';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { useCMS, type ShowItem } from '../context/CMSContext';
+import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const PLATFORM_DATA: Record<string, { icon: string; color: string }> = {
@@ -181,6 +181,51 @@ const SectionNav = () => {
   );
 };
 
+// ── Date formatter for shows ──
+const parseShowDate = (dateStr: string) => {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      const parts = dateStr.split(' ');
+      return {
+        day: parts[0] || '--',
+        month: parts[1] || '---',
+        year: parts[2] || '',
+        time: '',
+        full: dateStr
+      };
+    }
+    const day = d.getDate().toString().padStart(2, '0');
+    let month = d.toLocaleDateString('es-ES', { month: 'short' }).replace('.', '');
+    month = month.charAt(0).toUpperCase() + month.slice(1);
+    const year = d.getFullYear().toString();
+    const time = d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    return {
+      day,
+      month,
+      year,
+      time,
+      full: d.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }) + ` a las ${time} hs`
+    };
+  } catch (e) {
+    return { day: '--', month: '---', year: '', time: '', full: dateStr };
+  }
+};
+
+// ── Google Maps embed URL helper ──
+const getGmapsEmbedSrc = (input: string, address: string) => {
+  if (!input) {
+    return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
+  }
+  if (input.includes('src=')) {
+    const match = input.match(/src=["']([^"']+)["']/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return input;
+};
+
 const PublicLinks = () => {
   const { data, loading } = useCMS();
 
@@ -196,6 +241,96 @@ const PublicLinks = () => {
   // Community signup state
   const [email, setEmail] = useState('');
   const [signupState, setSignupState] = useState<'idle' | 'loading' | 'success' | 'exists' | 'error'>('idle');
+
+  // Shows Booking state
+  const [selectedShow, setSelectedShow] = useState<ShowItem | null>(null);
+  const [ticketsCount, setTicketsCount] = useState<number>(1);
+  const [bookingEmail, setBookingEmail] = useState('');
+  const [attendees, setAttendees] = useState<{ name: string; dni: string }[]>([{ name: '', dni: '' }]);
+  const [bookingStep, setBookingStep] = useState<'details' | 'success'>('details');
+  const [createdBookingId, setCreatedBookingId] = useState('');
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const handleTicketsCountChange = (count: number) => {
+    setTicketsCount(count);
+    setAttendees(prev => {
+      const next = [...prev];
+      if (count > prev.length) {
+        for (let i = prev.length; i < count; i++) {
+          next.push({ name: '', dni: '' });
+        }
+      } else if (count < prev.length) {
+        next.splice(count);
+      }
+      return next;
+    });
+  };
+
+  const handleConfirmBooking = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedShow || bookingLoading) return;
+    
+    if (!bookingEmail) return;
+    for (const a of attendees) {
+      if (!a.name.trim() || !a.dni.trim()) {
+        alert('Por favor completa el nombre y DNI de todos los asistentes.');
+        return;
+      }
+    }
+    
+    setBookingLoading(true);
+    try {
+      const bookingId = `JED-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      await setDoc(doc(db, 'bookings', bookingId), {
+        id: bookingId,
+        showId: selectedShow.id,
+        showName: selectedShow.name || 'Tour 2026',
+        email: bookingEmail,
+        ticketsCount,
+        attendees,
+        totalPrice: selectedShow.price * ticketsCount,
+        status: 'pending',
+        createdAt: serverTimestamp()
+      });
+      setCreatedBookingId(bookingId);
+      setBookingStep('success');
+    } catch (err) {
+      console.error("Error creating booking:", err);
+      alert("Hubo un error al registrar tu reserva. Inténtalo nuevamente.");
+    } finally {
+      setBookingLoading(false);
+    }
+  };
+
+  const openBookingModal = (show: ShowItem) => {
+    setSelectedShow(show);
+    setTicketsCount(1);
+    setBookingEmail('');
+    setAttendees([{ name: '', dni: '' }]);
+    setBookingStep('details');
+    setCreatedBookingId('');
+  };
+
+  const getWhatsAppMessage = () => {
+    if (!selectedShow) return '';
+    const dateParsed = parseShowDate(selectedShow.date);
+    const attendeesList = attendees.map((a, i) => `${i + 1}. ${a.name} (DNI: ${a.dni})`).join('\n');
+    const text = `Hola! Acabo de realizar una transferencia para reservar entradas para el show de Jed Vik.
+
+*Detalles de la Reserva:*
+- *Reserva ID:* ${createdBookingId}
+- *Show:* ${selectedShow.name}
+- *Fecha:* ${dateParsed.full}
+- *Entradas:* ${ticketsCount}
+- *Importe Total:* $${(selectedShow.price * ticketsCount).toLocaleString('es-AR')}
+- *Email:* ${bookingEmail}
+
+*Asistentes:*
+${attendeesList}
+
+Adjunto el comprobante de transferencia correspondiente.`;
+    return encodeURIComponent(text);
+  };
 
   useState(() => {
     const trackVisit = async () => {
@@ -505,42 +640,33 @@ const PublicLinks = () => {
           <div className="px-6 flex flex-col gap-3">
             {data.shows.length > 0 ? (
               data.shows.map(show => {
-                const parts = show.date.split(' ');
-                const day = parts[0] || '--';
-                const mon = parts[1] || '---';
+                const dateParsed = parseShowDate(show.date);
                 return (
-                  <div key={show.id} className="group relative rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] transition-all duration-300 p-5 flex items-center gap-5 overflow-hidden">
+                  <div 
+                    key={show.id} 
+                    onClick={() => openBookingModal(show)}
+                    className="group relative rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-300 p-5 flex items-center gap-5 overflow-hidden"
+                  >
                     {/* Glow on hover */}
                     <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
                     {/* Date block */}
                     <div className="relative flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center">
-                      <span className="font-headline font-black text-2xl leading-none" style={{ color: '#ff8e7d' }}>{day}</span>
-                      <span className="font-label text-[8px] tracking-widest uppercase" style={{ color: 'rgba(255,142,125,0.6)' }}>{mon}</span>
+                      <span className="font-headline font-black text-2xl leading-none animate-pulse animate-duration-1000" style={{ color: '#ff8e7d' }}>{dateParsed.day}</span>
+                      <span className="font-label text-[8px] tracking-widest uppercase" style={{ color: 'rgba(255,142,125,0.6)' }}>{dateParsed.month}</span>
                     </div>
                     {/* Info */}
                     <div className="relative flex-1 min-w-0">
-                      <p className="font-headline font-bold text-base tracking-wide uppercase truncate">{show.venue}</p>
+                      <p className="font-headline font-bold text-base tracking-wide uppercase truncate">{show.name || 'Tour Show'}</p>
                       <p className="font-label text-xs text-white/40 mt-0.5 flex items-center gap-1">
                         <span className="material-symbols-outlined text-[12px] opacity-60">location_on</span>
-                        {show.city}
+                        {show.venue} ({show.city})
                       </p>
                     </div>
                     {/* CTA */}
                     <div className="relative flex-shrink-0">
-                      {show.url && show.url !== '#' ? (
-                        <a
-                          href={show.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="px-5 py-2.5 bg-primary-gradient rounded-full font-headline font-bold text-[9px] tracking-widest uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(204,78,61,0.3)]"
-                        >
-                          Entradas
-                        </a>
-                      ) : (
-                        <span className="px-5 py-2.5 border border-white/10 rounded-full font-headline font-bold text-[9px] tracking-widest uppercase text-white/25">
-                          Pronto
-                        </span>
-                      )}
+                      <span className="px-5 py-2.5 bg-primary-gradient rounded-full font-headline font-bold text-[9px] tracking-widest uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(204,78,61,0.3)]">
+                        {show.url ? 'Info / Tickets' : 'Reservar'}
+                      </span>
                     </div>
                   </div>
                 );
@@ -703,6 +829,239 @@ const PublicLinks = () => {
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MERCH</span>
         </Link>
       </nav>
+
+      {/* ── Shows Reservation Modal ── */}
+      {selectedShow && (
+        <div 
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-in fade-in duration-200" 
+          style={{ backgroundColor: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(15px)' }}
+        >
+          <div className="bg-surface-container-high w-full max-w-4xl max-h-[90vh] rounded-3xl border border-white/10 flex flex-col shadow-[0_0_50px_rgba(204,78,61,0.15)] overflow-hidden animate-in fade-in zoom-in-95 duration-300">
+            
+            {/* Modal Header */}
+            <header className="px-6 py-5 border-b border-white/5 flex justify-between items-center bg-black/25">
+              <span className="font-headline font-black text-xs tracking-[0.2em] text-primary uppercase">Detalles del Show</span>
+              <button 
+                onClick={() => setSelectedShow(null)}
+                className="p-2 bg-white/5 hover:bg-white/10 rounded-full text-white/60 hover:text-white transition-all flex items-center justify-center"
+              >
+                <span className="material-symbols-outlined text-[20px]">close</span>
+              </button>
+            </header>
+
+            {/* Modal Content */}
+            <div className="flex-1 overflow-y-auto p-6 md:p-8">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                
+                {/* Column 1: Show Info & Map */}
+                <div className="space-y-6">
+                  <div>
+                    <h2 className="font-headline font-black text-3xl text-white uppercase tracking-tight leading-none">{selectedShow.name || 'Jed Vik Tour'}</h2>
+                    <p className="font-label text-xs text-white/40 uppercase tracking-widest mt-2">{selectedShow.venue} — {selectedShow.city}</p>
+                  </div>
+
+                  <div className="space-y-3 font-body text-sm text-white/80">
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">calendar_today</span>
+                      <div>
+                        <p className="font-bold text-white uppercase">Fecha y Hora</p>
+                        <p className="text-white/60 text-xs">{parseShowDate(selectedShow.date).full}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">pin_drop</span>
+                      <div>
+                        <p className="font-bold text-white uppercase">Dirección</p>
+                        <p className="text-white/60 text-xs">{selectedShow.address || 'Se informará próximamente'}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-start gap-3">
+                      <span className="material-symbols-outlined text-primary text-[20px] mt-0.5">payments</span>
+                      <div>
+                        <p className="font-bold text-white uppercase">Importe por Persona</p>
+                        <p className="text-white/60 text-xs">${selectedShow.price?.toLocaleString('es-AR')} ARS</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Maps Embed */}
+                  {selectedShow.address && (
+                    <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40">
+                      <iframe
+                        src={getGmapsEmbedSrc(selectedShow.gmapsUrl, selectedShow.address)}
+                        width="100%"
+                        height="100%"
+                        style={{ border: 0 }}
+                        allowFullScreen={false}
+                        loading="lazy"
+                        referrerPolicy="no-referrer-when-downgrade"
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+
+                {/* Column 2: Booking Form or Success */}
+                <div className="bg-black/20 rounded-2xl p-6 border border-white/5 flex flex-col justify-between">
+                  {selectedShow.url ? (
+                    /* External Sale */
+                    <div className="text-center py-10 space-y-6">
+                      <span className="material-symbols-outlined text-6xl text-primary animate-pulse">confirmation_number</span>
+                      <div className="space-y-2">
+                        <h4 className="font-headline font-black text-xl text-white uppercase tracking-tight">Venta de Entradas Externa</h4>
+                        <p className="font-body text-xs text-white/50 px-4">Este show gestiona la venta de entradas a través de una plataforma externa oficial.</p>
+                      </div>
+                      <a
+                        href={selectedShow.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-block w-full py-4 bg-primary-gradient hover:opacity-90 rounded-full font-headline font-bold text-xs tracking-[0.2em] text-white uppercase text-center active:scale-95 transition-all shadow-[0_4px_25px_rgba(204,78,61,0.35)]"
+                      >
+                        Comprar Entradas
+                      </a>
+                    </div>
+                  ) : bookingStep === 'details' ? (
+                    /* Local booking form */
+                    <form onSubmit={handleConfirmBooking} className="space-y-5">
+                      <h3 className="font-headline font-bold text-lg text-white uppercase tracking-tight border-b border-white/5 pb-2">Reservar Entradas</h3>
+                      
+                      {/* Selector de personas */}
+                      <div>
+                        <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2">Cantidad de Personas</label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          {[1, 2, 3, 4, 5, 6].map(num => (
+                            <button
+                              key={num}
+                              type="button"
+                              onClick={() => handleTicketsCountChange(num)}
+                              className={`w-9 h-9 rounded-full font-headline font-bold text-xs flex items-center justify-center transition-all ${
+                                ticketsCount === num 
+                                  ? 'bg-primary text-black font-black scale-110 shadow-[0_0_15px_rgba(0,255,65,0.4)]' 
+                                  : 'bg-white/5 text-white hover:bg-white/10'
+                              }`}
+                            >
+                              {num}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Un solo correo */}
+                      <div>
+                        <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1">Email de Contacto (Único)</label>
+                        <input
+                          type="email"
+                          required
+                          value={bookingEmail}
+                          onChange={e => setBookingEmail(e.target.value)}
+                          placeholder="ejemplo@correo.com"
+                          className="w-full bg-surface-container-highest rounded-full px-5 py-3 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                        />
+                      </div>
+
+                      {/* Asistentes (Nombres + DNIs) */}
+                      <div className="space-y-4 max-h-[220px] overflow-y-auto pr-2">
+                        {attendees.map((attendee, index) => (
+                          <div key={index} className="space-y-2 border-t border-white/5 pt-3 first:border-none first:pt-0">
+                            <p className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">Asistente #{index + 1}</p>
+                            <div className="grid grid-cols-2 gap-3">
+                              <input
+                                type="text"
+                                required
+                                value={attendee.name}
+                                onChange={e => {
+                                  const updated = [...attendees];
+                                  updated[index].name = e.target.value;
+                                  setAttendees(updated);
+                                }}
+                                placeholder="Nombre y Apellido"
+                                className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                              />
+                              <input
+                                type="text"
+                                required
+                                value={attendee.dni}
+                                onChange={e => {
+                                  const updated = [...attendees];
+                                  updated[index].dni = e.target.value;
+                                  setAttendees(updated);
+                                }}
+                                placeholder="DNI"
+                                className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                              />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Total */}
+                      <div className="border-t border-white/5 pt-4 flex justify-between items-center">
+                        <span className="font-label text-[10px] uppercase tracking-widest text-white/40">Total a Transferir</span>
+                        <span className="font-headline font-black text-xl text-primary">
+                          ${(selectedShow.price * ticketsCount).toLocaleString('es-AR')} ARS
+                        </span>
+                      </div>
+
+                      <button
+                        type="submit"
+                        disabled={bookingLoading}
+                        className="w-full py-3.5 bg-primary-gradient rounded-full font-headline font-bold text-[10px] tracking-[0.2em] text-white uppercase active:scale-95 transition-all shadow-[0_4px_25px_rgba(204,78,61,0.35)] flex items-center justify-center gap-2"
+                      >
+                        {bookingLoading ? (
+                          <>
+                            <span className="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                            Procesando...
+                          </>
+                        ) : 'Confirmar Pre-Reserva'}
+                      </button>
+                    </form>
+                  ) : (
+                    /* Success screen: Transfer & WhatsApp details */
+                    <div className="space-y-6 text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
+                      <div className="space-y-2">
+                        <span className="material-symbols-outlined text-5xl text-green-400">check_circle</span>
+                        <h4 className="font-headline font-black text-2xl text-white uppercase tracking-tight">¡Pre-Reserva Registrada!</h4>
+                        <p className="font-label text-[10px] text-primary font-bold tracking-widest uppercase">ID: {createdBookingId}</p>
+                      </div>
+
+                      {/* Instrucciones de pago */}
+                      <div className="bg-black/40 rounded-xl p-5 border border-white/5 space-y-3 text-left">
+                        <p className="font-label text-[9px] uppercase tracking-widest text-white/40 text-center border-b border-white/5 pb-2">Instrucciones de Pago</p>
+                        
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-white/50">Monto exacto:</span>
+                          <span className="font-headline font-black text-white text-sm">${(selectedShow.price * ticketsCount).toLocaleString('es-AR')} ARS</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="text-white/50">Alias CBU/CVU:</span>
+                          <span className="font-mono text-white font-bold select-all bg-white/5 px-2 py-0.5 rounded text-[11px]">{selectedShow.alias || 'jedvik.musica'}</span>
+                        </div>
+
+                        <p className="text-[10px] text-white/40 text-center pt-2">Realiza la transferencia por el total y envía el comprobante por WhatsApp para validar tu entrada.</p>
+                      </div>
+
+                      {/* Botón WhatsApp */}
+                      <a
+                        href={`https://wa.me/${selectedShow.whatsapp || '5491112345678'}?text=${getWhatsAppMessage()}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center justify-center gap-2 w-full py-4 bg-[#25D366] hover:bg-[#20ba56] rounded-full font-headline font-bold text-xs tracking-[0.2em] text-white uppercase active:scale-95 transition-all shadow-[0_4px_25px_rgba(37,211,102,0.3)]"
+                      >
+                        <span className="material-symbols-outlined text-[20px]">send</span>
+                        Enviar Comprobante
+                      </a>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

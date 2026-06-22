@@ -15,6 +15,7 @@ import AdminMore from './pages/admin/pages/AdminMore';
 import AdminEnDesarrollo from './pages/admin/pages/AdminEnDesarrollo';
 import AdminPromoLinks from './pages/admin/pages/AdminPromoLinks';
 import AdminPromoLinkEditor from './pages/admin/pages/AdminPromoLinkEditor';
+import AdminShows from './pages/admin/pages/AdminShows';
 
 function App() {
   return (
@@ -36,7 +37,7 @@ function App() {
             <Route path="/admin" element={<AdminLayout />}>
               <Route index element={<AdminStats />} />
               <Route path="links" element={<AdminLinks />} />
-              <Route path="shows" element={<AdminEnDesarrollo />} />
+              <Route path="shows" element={<AdminShows />} />
               <Route path="perfil" element={<AdminPerfil />} />
               <Route path="lanzamiento" element={<AdminLanzamiento />} />
               <Route path="promo" element={<AdminPromoLinks />} />
