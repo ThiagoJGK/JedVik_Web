@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useCMS, type ShowItem } from '../context/CMSContext';
+import { useCMS, type ShowItem, getActiveTanda } from '../context/CMSContext';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, doc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -281,6 +281,9 @@ const PublicLinks = () => {
     setBookingLoading(true);
     try {
       const bookingId = `JED-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
+      const activeTanda = getActiveTanda(selectedShow);
+      const totalPrice = activeTanda.currentPrice * ticketsCount;
+
       await setDoc(doc(db, 'bookings', bookingId), {
         id: bookingId,
         showId: selectedShow.id,
@@ -288,7 +291,9 @@ const PublicLinks = () => {
         email: bookingEmail,
         ticketsCount,
         attendees,
-        totalPrice: selectedShow.price * ticketsCount,
+        tandaName: activeTanda.tandaName,
+        totalPrice,
+        paymentMethod: 'transferencia',
         status: 'pending',
         createdAt: serverTimestamp()
       });
@@ -314,21 +319,23 @@ const PublicLinks = () => {
   const getWhatsAppMessage = () => {
     if (!selectedShow) return '';
     const dateParsed = parseShowDate(selectedShow.date);
+    const activeTanda = getActiveTanda(selectedShow);
+    const totalPrice = activeTanda.currentPrice * ticketsCount;
     const attendeesList = attendees.map((a, i) => `${i + 1}. ${a.name} (DNI: ${a.dni})`).join('\n');
-    const text = `Hola! Acabo de realizar una transferencia para reservar entradas para el show de Jed Vik.
+    const text = `¡Hola! Acabo de hacer la prereserva *${createdBookingId}* para el show de Jed Vik en *${selectedShow.city}*.
 
-*Detalles de la Reserva:*
+*Detalles:*
 - *Reserva ID:* ${createdBookingId}
-- *Show:* ${selectedShow.name}
+- *Show:* ${selectedShow.name} (${selectedShow.venue})
 - *Fecha:* ${dateParsed.full}
-- *Entradas:* ${ticketsCount}
-- *Importe Total:* $${(selectedShow.price * ticketsCount).toLocaleString('es-AR')}
+- *Entradas:* ${ticketsCount} (Tanda: ${activeTanda.tandaName})
+- *Importe Total:* $${totalPrice.toLocaleString('es-AR')}
 - *Email:* ${bookingEmail}
 
 *Asistentes:*
 ${attendeesList}
 
-Adjunto el comprobante de transferencia correspondiente.`;
+Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
     return encodeURIComponent(text);
   };
 

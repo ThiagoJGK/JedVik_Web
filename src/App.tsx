@@ -17,6 +17,8 @@ import AdminPromoLinks from './pages/admin/pages/AdminPromoLinks';
 import AdminPromoLinkEditor from './pages/admin/pages/AdminPromoLinkEditor';
 import AdminShows from './pages/admin/pages/AdminShows';
 
+import ShowDetailPage from './pages/ShowDetailPage';
+
 function App() {
   return (
     <AuthProvider>
@@ -25,6 +27,9 @@ function App() {
           <Routes>
             {/* Public landing */}
             <Route path="/" element={<PublicLinks />} />
+
+            {/* Public show detail page */}
+            <Route path="/show/:showId" element={<ShowDetailPage />} />
 
             {/* Public promo pages */}
             <Route path="/p/:slug" element={<PromoPage />} />

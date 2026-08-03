@@ -37,8 +37,8 @@ const AdminLayout = () => {
       </header>
 
       {/* Main content */}
-      <main className="pt-16 md:pl-60 pb-28 md:pb-10 min-h-screen bg-surface">
-        <div className="px-6 md:px-10 py-8 max-w-5xl mx-auto">
+      <main className="pt-24 md:pt-28 md:pl-60 pb-28 md:pb-10 min-h-screen bg-surface">
+        <div className="px-6 md:px-10 py-4 max-w-6xl mx-auto">
           <Outlet />
         </div>
       </main>

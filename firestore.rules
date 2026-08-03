@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // CMS Data: Read public, write admin (authenticated)
+    match /cms/{document=**} {
+      allow read: if true;
+      allow write: if request.auth != null;
+    }
+    
+    // Bookings collection: Allow public creation, allow read/update/delete for admin (authenticated)
+    match /bookings/{bookingId} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+    
+    // Analytics collection: Allow public visit tracking
+    match /analytics/{id} {
+      allow create: if true;
+      allow read, update, delete: if request.auth != null;
+    }
+  }
+}

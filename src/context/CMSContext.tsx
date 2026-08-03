@@ -10,6 +10,30 @@ export interface LinkItem {
   order: number;
 }
 
+export interface TandaItem {
+  id: string;
+  name: string; // ej: "Tanda 1 - Preventa Exclusiva", "Early Bird"
+  price: number;
+  type: 'quantity' | 'date';
+  ticketLimit?: number; // Límite acumulativo de entradas para esta tanda
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface MediaItem {
+  id: string;
+  type: 'image' | 'video'; // video directo (Cloudinary/mp4) o link youtube
+  url: string;
+  caption?: string;
+}
+
+export interface BankDetails {
+  alias: string;
+  cbu?: string;
+  bankName?: string;
+  holderName?: string;
+}
+
 export interface ShowItem {
   id: string;
   name: string;
@@ -22,7 +46,81 @@ export interface ShowItem {
   alias: string;
   whatsapp: string;
   url: string;
+  // Propiedades avanzadas
+  paymentType?: 'transferencia' | 'mercadopago' | 'both';
+  totalCapacity?: number;
+  manualSalesCount?: number;
+  tandas?: TandaItem[];
+  media?: MediaItem[];
+  bankDetails?: BankDetails;
+  description?: string;
+  imageUrl?: string;
 }
+
+/**
+ * Calcula la tanda activa de un show según las entradas ya vendidas o la fecha actual
+ */
+export const getActiveTanda = (show: ShowItem, soldCount: number = 0): { tandaName: string; currentPrice: number; limitInfo?: string; isLastTanda?: boolean } => {
+  if (!show.tandas || show.tandas.length === 0) {
+    return {
+      tandaName: 'Entrada General',
+      currentPrice: show.price || 0
+    };
+  }
+
+  const now = new Date();
+
+  // Intentar encontrar tanda por fecha activa primero si existen
+  const dateTandas = show.tandas.filter(t => t.type === 'date');
+  for (const t of dateTandas) {
+    if (t.startDate && t.endDate) {
+      const start = new Date(t.startDate);
+      const end = new Date(t.endDate);
+      if (now >= start && now <= end) {
+        return {
+          tandaName: t.name,
+          currentPrice: t.price,
+          limitInfo: `Válido hasta ${end.toLocaleDateString('es-AR')}`
+        };
+      }
+    }
+  }
+
+  // Si no o para tandas por cantidad
+  const quantityTandas = show.tandas.filter(t => t.type === 'quantity');
+  if (quantityTandas.length > 0) {
+    let accumulatedLimit = 0;
+    for (let i = 0; i < quantityTandas.length; i++) {
+      const t = quantityTandas[i];
+      accumulatedLimit += (t.ticketLimit || 0);
+      if (soldCount < accumulatedLimit) {
+        const remainingInTanda = accumulatedLimit - soldCount;
+        return {
+          tandaName: t.name,
+          currentPrice: t.price,
+          limitInfo: `Quedan ${remainingInTanda} entradas en esta tanda`,
+          isLastTanda: i === quantityTandas.length - 1
+        };
+      }
+    }
+    // Si superó todas las tandas por cantidad, usa la última tanda
+    const lastTanda = quantityTandas[quantityTandas.length - 1];
+    return {
+      tandaName: lastTanda.name,
+      currentPrice: lastTanda.price,
+      limitInfo: 'Últimas entradas disponibles',
+      isLastTanda: true
+    };
+  }
+
+  // Fallback si no coincide ninguna tanda por fecha
+  const firstTanda = show.tandas[0];
+  return {
+    tandaName: firstTanda.name,
+    currentPrice: firstTanda.price
+  };
+};
+
 
 export interface CMSData {
   profile: {
