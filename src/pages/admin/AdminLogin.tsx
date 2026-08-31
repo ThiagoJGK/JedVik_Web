@@ -31,7 +31,14 @@ const AdminLogin = () => {
       await loginWithGoogle();
       navigate('/admin');
     } catch (err: any) {
-      setError('Error al iniciar sesión con Google');
+      console.error("Google login error:", err);
+      if (err?.code === 'auth/popup-closed-by-user') {
+        setError('Inicio de sesión cancelado.');
+      } else if (err?.code === 'auth/unauthorized-domain') {
+        setError('Dominio no autorizado en Firebase Auth.');
+      } else {
+        setError('Error al autenticar con Google. Verifica que la cuenta esté habilitada.');
+      }
     } finally {
       setLoading(false);
     }
@@ -72,7 +79,7 @@ const AdminLogin = () => {
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
-            placeholder="EMAIL (thiagojgk@gmail.com)"
+            placeholder="EMAIL (jedvik.music@gmail.com)"
             className="w-full h-14 px-8 bg-surface-container-highest border-none text-white font-body text-sm rounded-full placeholder:text-white/20 focus:ring-2 focus:ring-white/10 outline-none transition-all"
           />
           <input

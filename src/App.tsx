@@ -18,6 +18,7 @@ import AdminPromoLinkEditor from './pages/admin/pages/AdminPromoLinkEditor';
 import AdminShows from './pages/admin/pages/AdminShows';
 
 import ShowDetailPage from './pages/ShowDetailPage';
+import ShowsPage from './pages/ShowsPage';
 
 function App() {
   return (
@@ -27,6 +28,9 @@ function App() {
           <Routes>
             {/* Public landing */}
             <Route path="/" element={<PublicLinks />} />
+
+            {/* Public dedicated shows directory */}
+            <Route path="/shows" element={<ShowsPage />} />
 
             {/* Public show detail page */}
             <Route path="/show/:showId" element={<ShowDetailPage />} />

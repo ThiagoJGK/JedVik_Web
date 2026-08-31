@@ -3,10 +3,16 @@ import { useAuth } from '../../context/AuthContext';
 import Sidebar from '../../components/admin/Sidebar';
 import BottomTabBar from '../../components/admin/BottomTabBar';
 
+export const AUTHORIZED_ADMIN_EMAILS = [
+  'jedvik.music@gmail.com',
+  'thiagojgk@gmail.com',
+  'test@jedvik.com'
+];
+
 const AdminLayout = () => {
   const { user, loading } = useAuth();
 
-  const userToUse = user || (window.location.hostname === 'localhost' ? { email: 'test@jedvik.com' } as any : null);
+  const userToUse = user || (window.location.hostname === 'localhost' ? { email: 'jedvik.music@gmail.com' } as any : null);
 
   if (loading) {
     return (
@@ -16,7 +22,12 @@ const AdminLayout = () => {
     );
   }
 
-  if (!userToUse) return <Navigate to="/admin/login" replace />;
+  const isAuthorized = userToUse?.email && (
+    AUTHORIZED_ADMIN_EMAILS.includes(userToUse.email.toLowerCase()) ||
+    window.location.hostname === 'localhost'
+  );
+
+  if (!userToUse || !isAuthorized) return <Navigate to="/admin/login" replace />;
 
   return (
     <div className="min-h-screen bg-surface text-on-surface font-body">

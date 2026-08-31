@@ -122,6 +122,14 @@ export const getActiveTanda = (show: ShowItem, soldCount: number = 0): { tandaNa
 };
 
 
+export interface TourConcept {
+  name: string;
+  subtitle?: string;
+  tagline?: string;
+  posterUrl?: string;
+  active?: boolean;
+}
+
 export interface CMSData {
   profile: {
     name: string;
@@ -132,6 +140,7 @@ export interface CMSData {
   appearance: {
     themeColor: string;
   };
+  tourConcept?: TourConcept;
   links: LinkItem[];
   shows: ShowItem[];
   featuredVideo: {
@@ -159,6 +168,13 @@ const defaultData: CMSData = {
   },
   appearance: {
     themeColor: "#00FF41"
+  },
+  tourConcept: {
+    name: "TOUR 2026",
+    subtitle: "GIRA EN VIVO",
+    tagline: "Experiencia sonora y visual en directo.",
+    posterUrl: "",
+    active: true
   },
   links: [
     { id: '1', platform: 'Spotify', url: 'https://spotify.com/', active: true, order: 0 },

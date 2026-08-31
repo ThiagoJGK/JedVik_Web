@@ -213,17 +213,18 @@ const parseShowDate = (dateStr: string) => {
 };
 
 // ── Google Maps embed URL helper ──
-const getGmapsEmbedSrc = (input: string, address: string) => {
-  if (!input) {
-    return `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
-  }
-  if (input.includes('src=')) {
+const getGmapsEmbedSrc = (input?: string, address?: string, venue?: string, city?: string) => {
+  if (input && input.includes('src=')) {
     const match = input.match(/src=["']([^"']+)["']/);
     if (match && match[1]) {
       return match[1];
     }
   }
-  return input;
+  if (input && input.includes('/maps/embed')) {
+    return input;
+  }
+  const query = [venue, address, city].filter(Boolean).join(', ') || address || 'Buenos Aires';
+  return `https://maps.google.com/maps?q=${encodeURIComponent(query)}&t=&z=15&ie=UTF8&iwloc=&output=embed`;
 };
 
 const PublicLinks = () => {
@@ -246,36 +247,19 @@ const PublicLinks = () => {
   const [selectedShow, setSelectedShow] = useState<ShowItem | null>(null);
   const [ticketsCount, setTicketsCount] = useState<number>(1);
   const [bookingEmail, setBookingEmail] = useState('');
-  const [attendees, setAttendees] = useState<{ name: string; dni: string }[]>([{ name: '', dni: '' }]);
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerDni, setBuyerDni] = useState('');
   const [bookingStep, setBookingStep] = useState<'details' | 'success'>('details');
   const [createdBookingId, setCreatedBookingId] = useState('');
   const [bookingLoading, setBookingLoading] = useState(false);
-
-  const handleTicketsCountChange = (count: number) => {
-    setTicketsCount(count);
-    setAttendees(prev => {
-      const next = [...prev];
-      if (count > prev.length) {
-        for (let i = prev.length; i < count; i++) {
-          next.push({ name: '', dni: '' });
-        }
-      } else if (count < prev.length) {
-        next.splice(count);
-      }
-      return next;
-    });
-  };
 
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedShow || bookingLoading) return;
     
-    if (!bookingEmail) return;
-    for (const a of attendees) {
-      if (!a.name.trim() || !a.dni.trim()) {
-        alert('Por favor completa el nombre y DNI de todos los asistentes.');
-        return;
-      }
+    if (!bookingEmail.trim() || !buyerName.trim() || !buyerDni.trim()) {
+      alert('Por favor completa todos los datos del comprador (Nombre, DNI y Email).');
+      return;
     }
     
     setBookingLoading(true);
@@ -288,9 +272,11 @@ const PublicLinks = () => {
         id: bookingId,
         showId: selectedShow.id,
         showName: selectedShow.name || 'Tour 2026',
-        email: bookingEmail,
+        email: bookingEmail.trim().toLowerCase(),
+        buyerName: buyerName.trim(),
+        buyerDni: buyerDni.trim(),
         ticketsCount,
-        attendees,
+        attendees: [{ name: buyerName.trim(), dni: buyerDni.trim() }],
         tandaName: activeTanda.tandaName,
         totalPrice,
         paymentMethod: 'transferencia',
@@ -311,7 +297,8 @@ const PublicLinks = () => {
     setSelectedShow(show);
     setTicketsCount(1);
     setBookingEmail('');
-    setAttendees([{ name: '', dni: '' }]);
+    setBuyerName('');
+    setBuyerDni('');
     setBookingStep('details');
     setCreatedBookingId('');
   };
@@ -321,19 +308,16 @@ const PublicLinks = () => {
     const dateParsed = parseShowDate(selectedShow.date);
     const activeTanda = getActiveTanda(selectedShow);
     const totalPrice = activeTanda.currentPrice * ticketsCount;
-    const attendeesList = attendees.map((a, i) => `${i + 1}. ${a.name} (DNI: ${a.dni})`).join('\n');
     const text = `¡Hola! Acabo de hacer la prereserva *${createdBookingId}* para el show de Jed Vik en *${selectedShow.city}*.
 
 *Detalles:*
 - *Reserva ID:* ${createdBookingId}
+- *Titular:* ${buyerName} (DNI: ${buyerDni})
 - *Show:* ${selectedShow.name} (${selectedShow.venue})
 - *Fecha:* ${dateParsed.full}
 - *Entradas:* ${ticketsCount} (Tanda: ${activeTanda.tandaName})
 - *Importe Total:* $${totalPrice.toLocaleString('es-AR')}
 - *Email:* ${bookingEmail}
-
-*Asistentes:*
-${attendeesList}
 
 Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
     return encodeURIComponent(text);
@@ -386,13 +370,6 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
   const handlePlayClick = () => {
     if (data.featuredVideo.url) {
       window.open(data.featuredVideo.url, '_blank');
-    }
-  };
-
-  const handleMerchClick = (e: React.MouseEvent) => {
-    if (!data.merch?.shopUrl) {
-      e.preventDefault();
-      alert('Tienda próximamente disponible.');
     }
   };
 
@@ -638,101 +615,127 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
 
         {/* ── Shows ── */}
         <section id="shows" className="mt-20 md:max-w-2xl md:mx-auto">
-          <div className="px-8 mb-8 flex justify-between items-end">
-            <h2 className="font-headline font-black text-4xl tracking-tighter uppercase">
-              <MatrixTitle>Proximos Shows</MatrixTitle>
-            </h2>
+          <div className="px-8 mb-6 flex justify-between items-end">
+            <div>
+              <span className="font-label text-[9px] uppercase tracking-[0.3em] text-primary font-bold block mb-1">
+                {data.tourConcept?.subtitle || 'Gira Oficial'}
+              </span>
+              <h2 className="font-headline font-black text-3xl md:text-4xl tracking-tighter uppercase">
+                <MatrixTitle>{data.tourConcept?.name || 'Próximos Shows'}</MatrixTitle>
+              </h2>
+            </div>
+            {data.shows.length > 3 && (
+              <Link
+                to="/shows"
+                className="font-label text-[10px] text-primary font-bold tracking-[0.2em] hover:opacity-70 transition-opacity uppercase pb-1"
+              >
+                Ver todas ({data.shows.length})
+              </Link>
+            )}
           </div>
 
           <div className="px-6 flex flex-col gap-3">
             {data.shows.length > 0 ? (
-              data.shows.map(show => {
-                const dateParsed = parseShowDate(show.date);
-                return (
-                  <div 
-                    key={show.id} 
-                    onClick={() => openBookingModal(show)}
-                    className="group relative rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-300 p-5 flex items-center gap-5 overflow-hidden"
+              <>
+                {data.shows.slice(0, 3).map((show, idx) => {
+                  const dateParsed = parseShowDate(show.date);
+                  return (
+                    <div 
+                      key={show.id} 
+                      onClick={() => openBookingModal(show)}
+                      className="group relative rounded-2xl border border-white/8 bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition-all duration-300 p-5 flex items-center gap-5 overflow-hidden"
+                    >
+                      {/* Glow on hover */}
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+                      {/* Date block */}
+                      <div className="relative flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center">
+                        <span className="font-headline font-black text-2xl leading-none animate-pulse animate-duration-1000" style={{ color: '#ff8e7d' }}>{dateParsed.day}</span>
+                        <span className="font-label text-[8px] tracking-widest uppercase" style={{ color: 'rgba(255,142,125,0.6)' }}>{dateParsed.month}</span>
+                      </div>
+                      {/* Info */}
+                      <div className="relative flex-1 min-w-0">
+                        <p className="font-headline font-bold text-base tracking-wide uppercase truncate">{show.name || `Parada ${String(idx + 1).padStart(2, '0')}`}</p>
+                        <p className="font-label text-xs text-white/40 mt-0.5 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[12px] opacity-60">location_on</span>
+                          {show.venue} ({show.city})
+                        </p>
+                      </div>
+                      {/* CTA */}
+                      <div className="relative flex-shrink-0">
+                        <span className="px-5 py-2.5 bg-primary-gradient rounded-full font-headline font-bold text-[9px] tracking-widest uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(204,78,61,0.3)]">
+                          {show.url ? 'Info / Tickets' : 'Reservar'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {data.shows.length > 3 && (
+                  <Link
+                    to="/shows"
+                    className="w-full mt-2 py-4 rounded-2xl bg-white/[0.03] hover:bg-white/[0.06] border border-white/5 flex items-center justify-center gap-2 font-headline font-bold text-xs uppercase tracking-widest text-white/80 hover:text-white transition-all group"
                   >
-                    {/* Glow on hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                    {/* Date block */}
-                    <div className="relative flex-shrink-0 w-14 h-14 rounded-xl bg-primary/10 border border-primary/20 flex flex-col items-center justify-center">
-                      <span className="font-headline font-black text-2xl leading-none animate-pulse animate-duration-1000" style={{ color: '#ff8e7d' }}>{dateParsed.day}</span>
-                      <span className="font-label text-[8px] tracking-widest uppercase" style={{ color: 'rgba(255,142,125,0.6)' }}>{dateParsed.month}</span>
-                    </div>
-                    {/* Info */}
-                    <div className="relative flex-1 min-w-0">
-                      <p className="font-headline font-bold text-base tracking-wide uppercase truncate">{show.name || 'Tour Show'}</p>
-                      <p className="font-label text-xs text-white/40 mt-0.5 flex items-center gap-1">
-                        <span className="material-symbols-outlined text-[12px] opacity-60">location_on</span>
-                        {show.venue} ({show.city})
-                      </p>
-                    </div>
-                    {/* CTA */}
-                    <div className="relative flex-shrink-0">
-                      <span className="px-5 py-2.5 bg-primary-gradient rounded-full font-headline font-bold text-[9px] tracking-widest uppercase active:scale-95 transition-all shadow-[0_0_20px_rgba(204,78,61,0.3)]">
-                        {show.url ? 'Info / Tickets' : 'Reservar'}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
+                    <span>Ver todas las fechas de la gira ({data.shows.length})</span>
+                    <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                  </Link>
+                )}
+              </>
             ) : (
               <p className="px-8 py-6 text-center text-white/30 font-body text-sm">No hay fechas de gira anunciadas.</p>
             )}
           </div>
         </section>
 
-        {/* ── Merch Carousel ── */}
-        <section id="merch" className="mt-20 md:max-w-2xl md:mx-auto">
-          <div className="flex justify-between items-center px-8 mb-8">
+        {/* ── Merch Oficial (Próximamente) ── */}
+        <section id="merch" className="mt-20 px-6 md:max-w-2xl md:mx-auto">
+          <div className="flex justify-between items-center px-2 mb-6">
             <h2 className="font-headline font-black text-3xl md:text-4xl tracking-tighter uppercase whitespace-nowrap">
               <MatrixTitle>Merch Oficial</MatrixTitle>
             </h2>
-            <a
-              href={data.merch?.shopUrl || '#'}
-              onClick={!data.merch?.shopUrl ? handleMerchClick : undefined}
-              target={data.merch?.shopUrl ? '_blank' : undefined}
-              rel="noreferrer"
-              className="font-label text-[10px] text-primary font-bold tracking-[0.2em] hover:opacity-70 transition-opacity uppercase"
-            >
-              Ver más
-            </a>
+            <span className="font-label text-[9px] uppercase tracking-[0.25em] px-3 py-1 bg-white/5 border border-white/10 rounded-full text-primary font-bold">
+              Tour 2026
+            </span>
           </div>
-          {/* Carousel con fades en los laterales */}
-          <div className="relative">
-            <div className="absolute left-0 top-0 bottom-8 w-12 z-10 bg-gradient-to-r from-black to-transparent pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-8 w-12 z-10 bg-gradient-to-l from-black to-transparent pointer-events-none" />
-            <div className="flex gap-4 overflow-x-auto pb-8 pl-8 pr-8 snap-x scrollbar-hide">
-              {[
-                { name: 'Monolith Hoodie', price: '$85.00 USD', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuCOFpocouiaf1-Tz8gQblk3JuYJ8VVQSrYjh3J8gxett3rAz-WZ4HyJbnkMkhNfjKjKQh9CSw8j4-AqTDWRVZb8VooY5awPjoXJc22esgFm4DkUvXH9k2Jt5hoMimXon8wI-YSBjU8NHEg8OLileoyxM0l5h-MuKlo-j-GTWz8Cca_FB8CqiWmld9F7QGtuM5J-cgP5pgZPuisOal1sDWZM2RH0m_DIi4sTDcWky-w7a7boq2GWEsDU1HFsbtWgYbJDIfFDU4W2_r0' },
-                { name: 'Echos Tee', price: '$45.00 USD', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBQPXWL5U2MD7siZXAwTn80cbOQuXCh1nWw9_DYo-J0PyRVh33xScLF_8wBWfRUeHX0fEISPcv-nm4wtJWVcPIO03dEpAv7iBssFOI27JiCny-RGJzBLYjnP7d-jxZQ7TleFszkOqQ6v6VTAXBuEmiPhi770KjL5WAgr4JAVWYIBu17-ggHxfwLg6rJjemnSY31gj0lgIf-TRvwozqzBR9eiEmYXgC3Dr_iRL-XoajS8Hka98c0GqzGLPZxzPPTNI2D2K0gZ_zQ4vU' },
-                { name: 'Echos Vinyl LE', price: '$38.00 USD', img: 'https://lh3.googleusercontent.com/aida-public/AB6AXuC6FdOrTBO0dTyoFjdrm5bk-MElx72J1jsB_cyoMsbzErvG-N3A5yoL3vuym3GUwjBvG_Zd02uat-0YtSDNRrNJmPPrI-40OM07767O_TF-eNC0ZeOd32_W7z1Q0RtVO3tNr_NT4Ju_7OjhRaVuWpqQdULcJcgoK1sCKQGzt67bJuK2ZoaYVMO9AeYAsvzkcZw3vAPVTzsD9wAaT1TuX_o2abAWtG3TFJjDC5bro65DeilpUcVWVK25kGj-j19TzIK0aeQ9ngFKr8o' },
-              ].map(item => (
-                <a
-                  key={item.name}
-                  href={data.merch?.shopUrl || '#'}
-                  onClick={!data.merch?.shopUrl ? handleMerchClick : undefined}
-                  target={data.merch?.shopUrl ? '_blank' : undefined}
-                  rel="noreferrer"
-                  className="flex-shrink-0 w-56 snap-start group cursor-pointer"
-                >
-                  <div className="aspect-[4/5] bg-surface-container rounded-xl overflow-hidden mb-4 group-hover:ring-2 group-hover:ring-primary/40 transition-all">
-                    <img className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" alt={item.name} src={item.img} />
-                  </div>
-                  <h5 className="font-headline font-bold text-sm tracking-wider uppercase mb-1">{item.name}</h5>
-                  <p className="font-label text-xs text-primary font-bold">{item.price}</p>
-                </a>
-              ))}
-            </div>
-            {/* Overlay blur cuando merch está ofuscado */}
-            {data.merch?.blurred && (
-              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center" style={{ backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', background: 'rgba(0,0,0,0.25)' }}>
-                <span className="material-symbols-outlined text-5xl mb-3" style={{ color: 'rgba(255,255,255,0.25)' }}>lock</span>
-                <p className="font-label text-[10px] uppercase tracking-[0.35em]" style={{ color: 'rgba(255,255,255,0.25)' }}>Próximamente</p>
+
+          <div className="relative rounded-3xl overflow-hidden border border-white/10 bg-surface-container/60 backdrop-blur-xl p-8 md:p-10 text-center shadow-2xl group">
+            {/* Ambient Glows (Terracotta & Amber) */}
+            <div 
+              className="absolute -top-24 -left-24 w-72 h-72 blur-[100px] rounded-full opacity-35 pointer-events-none"
+              style={{ backgroundColor: data.featuredVideo.highlightColor || '#CC4E3D' }}
+            />
+            <div 
+              className="absolute -bottom-24 -right-24 w-72 h-72 blur-[100px] rounded-full opacity-15 pointer-events-none"
+              style={{ backgroundColor: data.featuredVideo.highlightColor2 || '#f68a2f' }}
+            />
+
+            <div className="relative z-10 flex flex-col items-center max-w-md mx-auto">
+              <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mb-6 group-hover:scale-105 transition-transform duration-300 shadow-inner">
+                <span className="material-symbols-outlined text-3xl text-primary animate-pulse">apparel</span>
               </div>
-            )}
+
+              <span className="font-label text-[10px] uppercase tracking-[0.35em] text-primary font-black mb-2">
+                Colección en Preparación
+              </span>
+
+              <h3 className="font-headline font-black text-2xl md:text-3xl uppercase tracking-tight text-white mb-3 leading-tight">
+                Próximamente
+              </h3>
+
+              <p className="font-body text-xs md:text-sm text-white/60 leading-relaxed mb-6">
+                Indumentaria, accesorios y objetos artísticos oficiales del universo Jed Vik disponibles muy pronto.
+              </p>
+
+              <button
+                onClick={() => {
+                  document.getElementById('comunidad')?.scrollIntoView({ behavior: 'smooth' });
+                }}
+                className="inline-flex items-center gap-2 px-7 py-3.5 rounded-full font-headline font-bold text-xs uppercase tracking-widest text-white transition-all shadow-lg active:scale-95 hover:opacity-90"
+                style={{ background: 'linear-gradient(135deg, #CC4E3D 0%, #f68a2f 100%)' }}
+              >
+                <span>Avisarme del Lanzamiento</span>
+                <span className="material-symbols-outlined text-[16px]">arrow_downward</span>
+              </button>
+            </div>
           </div>
         </section>
 
@@ -816,25 +819,29 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
       </footer>
 
       {/* ── Bottom NavBar ── */}
-      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-12 items-center z-[70] bg-[#1a1a1a]/80 backdrop-blur-2xl w-auto rounded-full px-8 py-3 shadow-[0_0_40px_rgba(204,78,61,0.15)] md:hidden">
+      <nav className="fixed bottom-8 left-1/2 -translate-x-1/2 flex gap-12 items-center z-[70] bg-[#1a1a1a]/80 backdrop-blur-2xl w-auto rounded-full px-8 py-3 shadow-[0_0_40px_rgba(204,78,61,0.15)] md:hidden border border-white/10">
         <a href="#" className="flex flex-col items-center justify-center text-[#CC4E3D]">
           <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>audiotrack</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MUSIC</span>
         </a>
         <Link
-          to="/proximamente"
+          to="/shows"
           className="flex flex-col items-center justify-center text-white/50 hover:text-white transition-all"
         >
           <span className="material-symbols-outlined">confirmation_number</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">SHOWS</span>
         </Link>
-        <Link
-          to="/proximamente"
+        <a
+          href="#merch"
+          onClick={(e) => {
+            e.preventDefault();
+            document.getElementById('merch')?.scrollIntoView({ behavior: 'smooth' });
+          }}
           className="flex flex-col items-center justify-center text-white/50 hover:text-white transition-all"
         >
           <span className="material-symbols-outlined">apparel</span>
           <span className="font-label text-[8px] font-bold tracking-widest uppercase mt-1">MERCH</span>
-        </Link>
+        </a>
       </nav>
 
       {/* ── Shows Reservation Modal ── */}
@@ -894,17 +901,17 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                   </div>
 
                   {/* Maps Embed */}
-                  {selectedShow.address && (
+                  {(selectedShow.address || selectedShow.venue) && (
                     <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-white/5 bg-black/40">
                       <iframe
-                        src={getGmapsEmbedSrc(selectedShow.gmapsUrl, selectedShow.address)}
+                        src={getGmapsEmbedSrc(selectedShow.gmapsUrl, selectedShow.address, selectedShow.venue, selectedShow.city)}
                         width="100%"
                         height="100%"
                         style={{ border: 0 }}
                         allowFullScreen={false}
                         loading="lazy"
                         referrerPolicy="no-referrer-when-downgrade"
-                      ></iframe>
+                      />
                     </div>
                   )}
                 </div>
@@ -935,13 +942,13 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                       
                       {/* Selector de personas */}
                       <div>
-                        <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2">Cantidad de Personas</label>
+                        <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-2">Cantidad de Entradas</label>
                         <div className="flex flex-wrap items-center gap-2">
                           {[1, 2, 3, 4, 5, 6].map(num => (
                             <button
                               key={num}
                               type="button"
-                              onClick={() => handleTicketsCountChange(num)}
+                              onClick={() => setTicketsCount(num)}
                               className={`w-9 h-9 rounded-full font-headline font-bold text-xs flex items-center justify-center transition-all ${
                                 ticketsCount === num 
                                   ? 'bg-primary text-black font-black scale-110 shadow-[0_0_15px_rgba(0,255,65,0.4)]' 
@@ -954,52 +961,45 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                         </div>
                       </div>
 
-                      {/* Un solo correo */}
-                      <div>
-                        <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1">Email de Contacto (Único)</label>
-                        <input
-                          type="email"
-                          required
-                          value={bookingEmail}
-                          onChange={e => setBookingEmail(e.target.value)}
-                          placeholder="ejemplo@correo.com"
-                          className="w-full bg-surface-container-highest rounded-full px-5 py-3 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
-                        />
-                      </div>
+                      {/* Datos del Comprador / Titular de la Reserva */}
+                      <div className="space-y-3 bg-black/20 p-4 rounded-2xl border border-white/5">
+                        <p className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">Datos del Titular / Quien Paga</p>
+                        
+                        <div>
+                          <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1">Nombre y Apellido</label>
+                          <input
+                            type="text"
+                            required
+                            value={buyerName}
+                            onChange={e => setBuyerName(e.target.value)}
+                            placeholder="Nombre y Apellido completo"
+                            className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                        </div>
 
-                      {/* Asistentes (Nombres + DNIs) */}
-                      <div className="space-y-4 max-h-[220px] overflow-y-auto pr-2">
-                        {attendees.map((attendee, index) => (
-                          <div key={index} className="space-y-2 border-t border-white/5 pt-3 first:border-none first:pt-0">
-                            <p className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">Asistente #{index + 1}</p>
-                            <div className="grid grid-cols-2 gap-3">
-                              <input
-                                type="text"
-                                required
-                                value={attendee.name}
-                                onChange={e => {
-                                  const updated = [...attendees];
-                                  updated[index].name = e.target.value;
-                                  setAttendees(updated);
-                                }}
-                                placeholder="Nombre y Apellido"
-                                className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
-                              />
-                              <input
-                                type="text"
-                                required
-                                value={attendee.dni}
-                                onChange={e => {
-                                  const updated = [...attendees];
-                                  updated[index].dni = e.target.value;
-                                  setAttendees(updated);
-                                }}
-                                placeholder="DNI"
-                                className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
-                              />
-                            </div>
-                          </div>
-                        ))}
+                        <div>
+                          <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1">DNI / Documento</label>
+                          <input
+                            type="text"
+                            required
+                            value={buyerDni}
+                            onChange={e => setBuyerDni(e.target.value)}
+                            placeholder="Número de DNI"
+                            className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1">Email de Contacto</label>
+                          <input
+                            type="email"
+                            required
+                            value={bookingEmail}
+                            onChange={e => setBookingEmail(e.target.value)}
+                            placeholder="ejemplo@correo.com"
+                            className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                          />
+                        </div>
                       </div>
 
                       {/* Total */}

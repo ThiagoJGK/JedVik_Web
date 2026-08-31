@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useCMS, getActiveTanda, type MediaItem } from '../context/CMSContext';
+import { getGmapsDirectUrl, getGmapsEmbedSrc } from './ShowsPage';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
@@ -35,7 +36,8 @@ const ShowDetailPage: React.FC = () => {
   const [bookingModalOpen, setBookingModalOpen] = useState(false);
   const [ticketsCount, setTicketsCount] = useState<number>(1);
   const [bookingEmail, setBookingEmail] = useState('');
-  const [attendees, setAttendees] = useState<{ name: string; dni: string }[]>([{ name: '', dni: '' }]);
+  const [buyerName, setBuyerName] = useState('');
+  const [buyerDni, setBuyerDni] = useState('');
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'transferencia' | 'mercadopago'>('transferencia');
   const [bookingStep, setBookingStep] = useState<'details' | 'success' | 'mp_redirect'>('details');
   const [createdBookingId, setCreatedBookingId] = useState('');
@@ -101,35 +103,13 @@ const ShowDetailPage: React.FC = () => {
   const unitPrice = activeTanda.currentPrice;
   const totalPrice = unitPrice * ticketsCount;
 
-  const handleTicketsCountChange = (count: number) => {
-    setTicketsCount(count);
-    setAttendees(prev => {
-      const next = [...prev];
-      if (count > prev.length) {
-        for (let i = prev.length; i < count; i++) {
-          next.push({ name: '', dni: '' });
-        }
-      } else if (count < prev.length) {
-        next.splice(count);
-      }
-      return next;
-    });
-  };
-
   const handleConfirmBooking = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!show || bookingLoading || isSoldOut) return;
 
-    if (!bookingEmail) {
-      alert('Por favor ingresa tu email de contacto.');
+    if (!bookingEmail.trim() || !buyerName.trim() || !buyerDni.trim()) {
+      alert('Por favor completa todos los datos del comprador (Nombre, DNI y Email).');
       return;
-    }
-
-    for (const a of attendees) {
-      if (!a.name.trim() || !a.dni.trim()) {
-        alert('Por favor completa el Nombre y DNI de todos los asistentes.');
-        return;
-      }
     }
 
     setBookingLoading(true);
@@ -141,9 +121,11 @@ const ShowDetailPage: React.FC = () => {
           id: bookingId,
           showId: show.id,
           showName: show.name || 'Tour Jed Vik',
-          email: bookingEmail,
+          email: bookingEmail.trim().toLowerCase(),
+          buyerName: buyerName.trim(),
+          buyerDni: buyerDni.trim(),
           ticketsCount,
-          attendees,
+          attendees: [{ name: buyerName.trim(), dni: buyerDni.trim() }],
           tandaName: activeTanda.tandaName,
           totalPrice,
           paymentMethod: 'transferencia',
@@ -162,10 +144,12 @@ const ShowDetailPage: React.FC = () => {
             bookingId,
             showId: show.id,
             showName: show.name,
-            email: bookingEmail,
+            email: bookingEmail.trim().toLowerCase(),
+            buyerName: buyerName.trim(),
+            buyerDni: buyerDni.trim(),
             ticketsCount,
             unitPrice,
-            attendees,
+            attendees: [{ name: buyerName.trim(), dni: buyerDni.trim() }],
             originUrl: window.location.origin
           })
         });
@@ -198,6 +182,7 @@ const ShowDetailPage: React.FC = () => {
 
 *Detalles:*
 - *Reserva ID:* ${createdBookingId}
+- *Titular:* ${buyerName} (DNI: ${buyerDni})
 - *Show:* ${show.name} (${show.venue})
 - *Entradas:* ${ticketsCount} (Tanda: ${activeTanda.tandaName})
 - *Importe Total:* $${totalPrice.toLocaleString('es-AR')}
@@ -298,27 +283,36 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
           )}
 
           {/* Google Maps Location */}
-          {show.gmapsUrl && (
-            <div className="bg-surface-container rounded-3xl p-6 border border-white/5 space-y-3">
-              <h3 className="font-headline font-bold text-sm uppercase tracking-wider text-white/80 flex items-center gap-2">
-                <span className="material-symbols-outlined text-primary">map</span>
-                Ubicación del Evento
-              </h3>
-              <p className="font-body text-xs text-white/60">{show.address} ({show.venue})</p>
-              
-              {show.gmapsUrl.includes('iframe') ? (
-                <div className="w-full h-48 rounded-2xl overflow-hidden border border-white/10" dangerouslySetInnerHTML={{ __html: show.gmapsUrl }} />
-              ) : (
+          {(show.address || show.gmapsUrl) && (
+            <div className="bg-surface-container rounded-3xl p-6 border border-white/5 space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="font-headline font-bold text-sm uppercase tracking-wider text-white/80 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-primary">location_on</span>
+                  Ubicación del Evento
+                </h3>
                 <a
-                  href={show.gmapsUrl}
+                  href={getGmapsDirectUrl(show)}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 rounded-full font-headline text-xs text-primary transition-all border border-primary/20"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-full font-headline text-[10px] uppercase tracking-wider text-primary transition-all border border-primary/20"
                 >
-                  <span className="material-symbols-outlined text-[16px]">open_in_new</span>
-                  Ver en Google Maps
+                  <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  Abrir Mapa
                 </a>
-              )}
+              </div>
+              <p className="font-body text-xs text-white/60">{show.address} ({show.venue})</p>
+              
+              <div className="w-full h-48 rounded-2xl overflow-hidden border border-white/10 bg-black/40">
+                <iframe
+                  src={getGmapsEmbedSrc(show.gmapsUrl, show.address, show.venue, show.city)}
+                  width="100%"
+                  height="100%"
+                  style={{ border: 0 }}
+                  allowFullScreen={false}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </div>
             </div>
           )}
         </div>
@@ -429,7 +423,7 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                   <div className="flex items-center gap-4 bg-surface-container-highest rounded-full p-2 w-fit">
                     <button
                       type="button"
-                      onClick={() => handleTicketsCountChange(Math.max(1, ticketsCount - 1))}
+                      onClick={() => setTicketsCount(Math.max(1, ticketsCount - 1))}
                       className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center"
                     >
                       -
@@ -437,7 +431,7 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                     <span className="font-headline font-black text-lg px-4 text-white">{ticketsCount}</span>
                     <button
                       type="button"
-                      onClick={() => handleTicketsCountChange(Math.min(10, ticketsCount + 1))}
+                      onClick={() => setTicketsCount(Math.min(10, ticketsCount + 1))}
                       className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white font-bold flex items-center justify-center"
                     >
                       +
@@ -445,51 +439,45 @@ Adjunto por aquí mi comprobante de transferencia para confirmarla.`;
                   </div>
                 </div>
 
-                {/* Contact Email */}
-                <div>
-                  <label className="font-label text-[10px] uppercase tracking-widest text-white/50 block mb-1.5 ml-2">Email de Contacto</label>
-                  <input
-                    type="email"
-                    required
-                    value={bookingEmail}
-                    onChange={e => setBookingEmail(e.target.value)}
-                    placeholder="tu@email.com"
-                    className="w-full bg-surface-container-highest rounded-full px-5 py-3 text-sm font-body text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-primary/30"
-                  />
-                </div>
+                {/* Datos del Comprador / Titular de la Reserva */}
+                <div className="space-y-3 bg-black/30 p-4 rounded-2xl border border-white/5">
+                  <p className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">Datos del Titular / Quien Paga</p>
+                  
+                  <div>
+                    <label className="font-label text-[10px] uppercase tracking-widest text-white/50 block mb-1">Nombre y Apellido</label>
+                    <input
+                      type="text"
+                      required
+                      value={buyerName}
+                      onChange={e => setBuyerName(e.target.value)}
+                      placeholder="Tu nombre y apellido"
+                      className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
 
-                {/* Attendees Info */}
-                <div className="space-y-3">
-                  <label className="font-label text-[10px] uppercase tracking-widest text-white/50 block ml-2">Datos de los Asistentes</label>
-                  {attendees.map((attendee, index) => (
-                    <div key={index} className="bg-black/30 p-4 rounded-2xl border border-white/5 space-y-3">
-                      <p className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">Asistente #{index + 1}</p>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                        <input
-                          type="text"
-                          required
-                          value={attendee.name}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setAttendees(prev => prev.map((a, i) => i === index ? { ...a, name: val } : a));
-                          }}
-                          placeholder="Nombre Completo"
-                          className="bg-surface-container-highest rounded-full px-4 py-2 text-xs text-white placeholder:text-white/20"
-                        />
-                        <input
-                          type="text"
-                          required
-                          value={attendee.dni}
-                          onChange={e => {
-                            const val = e.target.value;
-                            setAttendees(prev => prev.map((a, i) => i === index ? { ...a, dni: val } : a));
-                          }}
-                          placeholder="DNI"
-                          className="bg-surface-container-highest rounded-full px-4 py-2 text-xs text-white placeholder:text-white/20"
-                        />
-                      </div>
-                    </div>
-                  ))}
+                  <div>
+                    <label className="font-label text-[10px] uppercase tracking-widest text-white/50 block mb-1">DNI / Documento</label>
+                    <input
+                      type="text"
+                      required
+                      value={buyerDni}
+                      onChange={e => setBuyerDni(e.target.value)}
+                      placeholder="Número de DNI"
+                      className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-label text-[10px] uppercase tracking-widest text-white/50 block mb-1">Email de Contacto</label>
+                    <input
+                      type="email"
+                      required
+                      value={bookingEmail}
+                      onChange={e => setBookingEmail(e.target.value)}
+                      placeholder="tu@email.com"
+                      className="w-full bg-surface-container-highest rounded-full px-4 py-2.5 text-xs text-white placeholder:text-white/20 border-none outline-none focus:ring-2 focus:ring-primary/30"
+                    />
+                  </div>
                 </div>
 
                 {/* Payment Flow Selection */}

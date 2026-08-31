@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useCMS, type ShowItem, type TandaItem, type MediaItem, getActiveTanda } from '../../../context/CMSContext';
 import { collection, query, where, onSnapshot, doc, updateDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { db } from '../../../firebase';
@@ -13,6 +14,8 @@ interface Booking {
   showId: string;
   showName: string;
   email: string;
+  buyerName?: string;
+  buyerDni?: string;
   ticketsCount: number;
   attendees: Attendee[];
   totalPrice: number;
@@ -62,6 +65,37 @@ const AdminShows = () => {
 
   // State for Toast feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Tour Concept state
+  const [tourForm, setTourForm] = useState({
+    name: data.tourConcept?.name || 'TOUR 2026',
+    subtitle: data.tourConcept?.subtitle || 'GIRA EN VIVO',
+    tagline: data.tourConcept?.tagline || 'Experiencia sonora y visual en directo.',
+  });
+  const [editingTour, setEditingTour] = useState(false);
+
+  useEffect(() => {
+    if (data.tourConcept) {
+      setTourForm({
+        name: data.tourConcept.name || 'TOUR 2026',
+        subtitle: data.tourConcept.subtitle || 'GIRA EN VIVO',
+        tagline: data.tourConcept.tagline || 'Experiencia sonora y visual en directo.',
+      });
+    }
+  }, [data.tourConcept]);
+
+  const handleSaveTourConcept = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await updateData({
+      tourConcept: {
+        ...data.tourConcept,
+        ...tourForm,
+        active: true
+      }
+    });
+    setEditingTour(false);
+    showToast('Concepto de gira actualizado');
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -282,22 +316,21 @@ const AdminShows = () => {
   };
 
   const exportCSV = (show: ShowItem) => {
-    const headers = ['ID Reserva', 'Origen', 'Email de Contacto', 'Nombre Asistente', 'DNI Asistente', 'Estado Pago', 'Total Abonado', 'Fecha de Creacion'];
+    const headers = ['ID Reserva', 'Origen', 'Email de Contacto', 'Titular / Comprador', 'DNI Titular', 'Cantidad Entradas', 'Estado Pago', 'Total Abonado', 'Fecha de Creacion'];
     
     const rows = bookings
       .filter(b => b.status !== 'cancelled')
-      .flatMap(b => 
-        (b.attendees || []).map(a => [
-          b.id,
-          b.origin === 'manual' ? 'PRESENCIAL/MANUAL' : 'WEB',
-          b.email,
-          a.name,
-          a.dni,
-          b.status === 'confirmed' ? 'CONFIRMADO' : 'PENDIENTE',
-          b.totalPrice,
-          b.createdAt?.toDate().toLocaleString('es-AR') ?? ''
-        ])
-      );
+      .map(b => [
+        b.id,
+        b.origin === 'manual' ? 'PRESENCIAL/MANUAL' : 'WEB',
+        b.email,
+        b.buyerName || b.attendees?.[0]?.name || 'Sin nombre',
+        b.buyerDni || b.attendees?.[0]?.dni || '-',
+        b.ticketsCount || 1,
+        b.status === 'confirmed' ? 'CONFIRMADO' : 'PENDIENTE',
+        b.totalPrice,
+        b.createdAt?.toDate ? b.createdAt.toDate().toLocaleString('es-AR') : ''
+      ]);
 
     const csvContent = [
       headers.join(','),
@@ -358,6 +391,95 @@ const AdminShows = () => {
           </button>
         )}
       </header>
+
+      {/* Shows Header & Presentation Card */}
+      <div className="bg-surface-container-low rounded-3xl p-6 md:p-7 border border-white/10 shadow-xl space-y-4">
+        <div className="flex justify-between items-center flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary">
+              <span className="material-symbols-outlined text-xl">confirmation_number</span>
+            </div>
+            <div>
+              <span className="font-label text-[9px] uppercase tracking-widest text-primary font-bold block">Encabezado de Cartelera</span>
+              <h2 className="font-headline font-black text-xl text-white uppercase tracking-tight">
+                {data.tourConcept?.name || 'SHOWS EN VIVO'}
+              </h2>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Link
+              to="/shows"
+              target="_blank"
+              className="flex items-center gap-1.5 px-4 py-2 bg-white/5 hover:bg-white/10 text-white/80 rounded-full font-headline font-bold text-[10px] uppercase tracking-widest transition-all border border-white/10"
+            >
+              <span className="material-symbols-outlined text-[15px]">visibility</span>
+              Ver Cartelera Pública
+            </Link>
+            <button
+              type="button"
+              onClick={() => setEditingTour(!editingTour)}
+              className="flex items-center gap-1.5 px-4 py-2 bg-primary/10 hover:bg-primary/20 text-primary rounded-full font-headline font-bold text-[10px] uppercase tracking-widest transition-all border border-primary/20"
+            >
+              <span className="material-symbols-outlined text-[15px]">{editingTour ? 'close' : 'edit'}</span>
+              {editingTour ? 'Cancelar' : 'Personalizar Texto'}
+            </button>
+          </div>
+        </div>
+
+        {editingTour ? (
+          <form onSubmit={handleSaveTourConcept} className="pt-4 border-t border-white/5 space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1.5 ml-2">Título de la Sección</label>
+                <input
+                  type="text"
+                  required
+                  value={tourForm.name}
+                  onChange={e => setTourForm(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder="ej: SHOWS EN VIVO o TOUR 2026"
+                  className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+
+              <div>
+                <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1.5 ml-2">Subtítulo / Etiqueta</label>
+                <input
+                  type="text"
+                  value={tourForm.subtitle}
+                  onChange={e => setTourForm(prev => ({ ...prev, subtitle: e.target.value }))}
+                  placeholder="ej: PRÓXIMAS FECHAS o EN VIVO"
+                  className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="font-label text-[10px] uppercase tracking-widest text-white/40 block mb-1.5 ml-2">Descripción o Mensaje</label>
+              <input
+                type="text"
+                value={tourForm.tagline}
+                onChange={e => setTourForm(prev => ({ ...prev, tagline: e.target.value }))}
+                placeholder="ej: Entradas oficiales y ubicaciones de las próximas presentaciones."
+                className="w-full bg-surface-container-highest rounded-full px-5 py-2.5 text-xs font-body text-white border-none outline-none focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="submit"
+                className="px-6 py-2.5 rounded-full bg-primary text-black font-headline font-bold text-xs uppercase tracking-wider"
+              >
+                Guardar Cambios
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p className="text-xs text-white/60 font-body">
+            {data.tourConcept?.tagline || 'Entradas oficiales, ubicaciones y detalles de cada presentación en directo.'}
+          </p>
+        )}
+      </div>
 
       {/* Add / Edit Form */}
       {adding && (
@@ -1113,17 +1235,39 @@ const AdminShows = () => {
 
                               </div>
 
-                              {/* Attendees Names & DNIs */}
-                              <div className="bg-black/25 rounded-xl p-4 border border-white/5">
-                                <p className="font-label text-[9px] uppercase tracking-widest text-white/30 mb-2">Asistentes registrados</p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                  {(b.attendees || []).map((attendee, index) => (
-                                    <div key={index} className="flex justify-between items-center border-b border-white/5 pb-1 md:pb-0 md:border-none">
-                                      <span className="font-body text-xs text-white/80">{attendee.name}</span>
-                                      <span className="font-label text-[10px] text-white/40">DNI: {attendee.dni}</span>
-                                    </div>
-                                  ))}
+                              {/* Titular / Asistentes registrados */}
+                              <div className="bg-black/25 rounded-xl p-4 border border-white/5 space-y-2">
+                                <div className="flex justify-between items-center border-b border-white/5 pb-2">
+                                  <span className="font-label text-[9px] uppercase tracking-widest text-primary font-bold">
+                                    Titular de la Reserva
+                                  </span>
+                                  <span className="font-label text-[9px] uppercase tracking-widest text-white/50">
+                                    {b.ticketsCount} {b.ticketsCount === 1 ? 'Entrada' : 'Entradas'}
+                                  </span>
                                 </div>
+                                
+                                <div className="flex justify-between items-center">
+                                  <span className="font-body text-xs font-bold text-white">
+                                    {b.buyerName || b.attendees?.[0]?.name || 'Sin nombre registrado'}
+                                  </span>
+                                  <span className="font-label text-[10px] text-white/60 bg-white/5 px-2.5 py-1 rounded-full border border-white/5">
+                                    DNI: {b.buyerDni || b.attendees?.[0]?.dni || '-'}
+                                  </span>
+                                </div>
+
+                                {b.attendees && b.attendees.length > 1 && (
+                                  <div className="pt-2 border-t border-white/5 space-y-1">
+                                    <p className="font-label text-[8px] uppercase tracking-widest text-white/30">Otros asistentes (histórico)</p>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                      {b.attendees.slice(1).map((att, idx) => (
+                                        <div key={idx} className="flex justify-between text-[11px] text-white/60">
+                                          <span>{att.name}</span>
+                                          <span className="text-white/30">DNI: {att.dni}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
                               </div>
 
                             </div>
